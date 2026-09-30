@@ -13,6 +13,8 @@ final readonly class ServiceDefinition
         public bool $forwardAuth,
         public string $secret = '',
         public bool $public = false,
+        /** @var array<string, mixed> */
+        public array $resilience = [],
     ) {}
 
     /**
@@ -29,6 +31,7 @@ final readonly class ServiceDefinition
             forwardAuth: (bool) ($config['forward_auth'] ?? false),
             secret: (string) ($config['secret'] ?? ''),
             public: (bool) ($config['public'] ?? false),
+            resilience: array_replace_recursive((array) config('gateway.resilience', []), (array) ($config['resilience'] ?? []), ['timeout' => (float) ($config['timeout'] ?? config('gateway.default_timeout', 10))]),
         );
     }
 }

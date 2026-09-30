@@ -44,12 +44,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return ApiResponse::error(
+            $response = ApiResponse::error(
                 message: $e->getMessage(),
                 errors: $e->context() ?: null,
                 status: $e->statusCode(),
                 meta: ['error_code' => $e->errorCode()],
             );
+
+            if ($e instanceof \App\Infrastructure\Gateway\GatewayUnavailableException && $e->retryAfter !== null) {
+                $response->headers->set('Retry-After', (string) $e->retryAfter);
+            }
+
+            return $response;
         });
 
         $exceptions->render(function (AuthenticationException $e, Request $request) {

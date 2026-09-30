@@ -207,6 +207,40 @@ return [
     'health' => [
         'required' => array_values(array_filter(array_map('trim', explode(',', (string) env('HEALTH_REQUIRED', 'database'))))),
         'timeout_ms' => (int) env('HEALTH_CHECK_TIMEOUT_MS', 1500),
+        // Register /liveness /startup /readiness /health (the API gateway keeps its own and sets this to false).
+        'routes' => (bool) env('HEALTH_ROUTES', true),
+        // Connection used by the database check (null = default connection).
+        'database_connection' => env('HEALTH_DB_CONNECTION'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Saga
+    |--------------------------------------------------------------------------
+    */
+
+    'saga' => [
+        'compensation_retries' => (int) env('SAGA_COMPENSATION_RETRIES', 3),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Package features
+    |--------------------------------------------------------------------------
+    |
+    | Turn off what the host application already provides itself (the API gateway ships its own copies of the
+    | outbox/inbox tables and the kafka:consume / messaging:outbox-publish commands).
+    |
+    */
+
+    'register' => [
+        'migrations' => true,
+        'commands' => true,
+    ],
+
+    'observability' => [
+        // Global middleware: request id, correlation id, trace context, RED metrics.
+        'http' => (bool) env('OBSERVABILITY_HTTP', true),
     ],
 
     /*

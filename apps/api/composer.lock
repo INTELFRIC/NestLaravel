@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c8f9bb1e408c330afe8b50fa49dddabf",
+    "content-hash": "ece310e10c54f354c969f08d309a254b",
     "packages": [
         {
             "name": "brick/math",
@@ -2524,6 +2524,54 @@
                 }
             ],
             "time": "2026-09-27T12:07:26+00:00"
+        },
+        {
+            "name": "nestlaravel/kafka",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../../packages/laravel-kafka",
+                "reference": "f337ad93c761ce6cd84623fc6aa7cc35fd48692a"
+            },
+            "require": {
+                "illuminate/console": "^13.0",
+                "illuminate/database": "^13.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^11.0",
+                "phpunit/phpunit": "^12.5"
+            },
+            "suggest": {
+                "ext-rdkafka": "Required in production for real Kafka connectivity (falls back to log/null drivers without it)."
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "NestLaravel\\Kafka\\KafkaServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "NestLaravel\\Kafka\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "NestLaravel\\Kafka\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "NestLaravel Kafka kit: event envelope, outbox, hardened producer/consumer, retry + DLQ, idempotency.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "nette/schema",
@@ -8845,7 +8893,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "nestlaravel/kafka": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

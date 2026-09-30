@@ -3,15 +3,19 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
         "dedoc/scramble": "^0.13.39",
         "laravel/framework": "^13.8",
         "laravel/mcp": "^1.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
+        "nestlaravel/kafka": "@dev",
+        "php": "^8.3",
         "predis/predis": "^3.5"
     },
     "require-dev": {
@@ -89,5 +93,14 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../packages/laravel-kafka",
+            "options": {
+                "symlink": true
+            }
+        }
+    ]
 }

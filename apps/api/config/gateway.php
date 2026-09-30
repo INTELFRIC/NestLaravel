@@ -66,6 +66,34 @@ return [
     'default_timeout' => (float) env('GATEWAY_DEFAULT_TIMEOUT', 10),
 
     /*
+    |--------------------------------------------------------------------------
+    | Resilience (applies to every service; override per service with the same keys)
+    |--------------------------------------------------------------------------
+    |
+    | connect_timeout / timeout  bound every attempt: nothing ever waits forever
+    | retries                    extra attempts for TRANSIENT failures of SAFE requests only (GET/HEAD/OPTIONS, or
+    |                            requests carrying an Idempotency-Key header, or when retry_unsafe is true)
+    | breaker                    shared (cache-backed) circuit breaker: `threshold` failures within `window` seconds
+    |                            open the circuit for `open` seconds; then one probe request decides
+    |
+    | Circuit/rate-limit/nonce state lives in the CACHE: use a shared store (redis) when running >1 gateway replica.
+    */
+    'resilience' => [
+        'connect_timeout' => (float) env('GATEWAY_CONNECT_TIMEOUT', 2),
+        'retries' => (int) env('GATEWAY_RETRIES', 2),
+        'retry_base_ms' => (int) env('GATEWAY_RETRY_BASE_MS', 100),
+        'retry_max_ms' => (int) env('GATEWAY_RETRY_MAX_MS', 2000),
+        'retry_unsafe' => (bool) env('GATEWAY_RETRY_UNSAFE', false),
+        'budget_ms' => (int) env('GATEWAY_RETRY_BUDGET_MS', 8000),
+        'breaker' => [
+            'threshold' => (int) env('GATEWAY_BREAKER_THRESHOLD', 5),
+            'window' => (int) env('GATEWAY_BREAKER_WINDOW', 30),
+            'open' => (int) env('GATEWAY_BREAKER_OPEN', 20),
+        ],
+        'cache_store' => env('GATEWAY_STATE_CACHE_STORE'),
+    ],
+
+    /*
     | Headers always forwarded to downstream services.
     */
     'forward_headers' => [
@@ -73,5 +101,7 @@ return [
         'Content-Type',
         'X-Request-ID',
         'X-Correlation-ID',
+        // Lets clients opt a POST into safe retries: the same key => the same business operation.
+        'Idempotency-Key',
     ],
 ];

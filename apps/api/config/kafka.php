@@ -157,4 +157,18 @@ return [
         'cache_store' => env('INFRA_CACHE_STORE', env('CACHE_STORE', 'redis')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | nestlaravel/kafka package integration
+    |--------------------------------------------------------------------------
+    |
+    | The gateway uses the package for ResilientHttp (timeouts, retries, circuit breaker), request observability and
+    | /metrics. It keeps its OWN outbox/inbox tables, commands and health routes, so those package features are off.
+    |
+    */
+
+    'register' => ['migrations' => false, 'commands' => false],
+
+    'health' => ['routes' => false, 'required' => ['database'], 'timeout_ms' => 1500],
+
 ];

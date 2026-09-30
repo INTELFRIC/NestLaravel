@@ -125,11 +125,14 @@ final class KafkaServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        // Apps that keep their own copy of these tables/commands (the API gateway) set `kafka.register.*` to false.
+        if (config('kafka.register.migrations', true)) {
+            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        }
 
         // Ops endpoints (/liveness /startup /readiness /health /metrics). Apps with their own health routes set
         // `kafka.health.routes` = false (the API gateway does).
-        if (config('kafka.health.routes', true) && ! $this->app->routesAreCached()) {
+        if (! $this->app->routesAreCached()) {
             \Illuminate\Support\Facades\Route::group([], __DIR__.'/../routes/ops.php');
         }
 
@@ -147,7 +150,10 @@ final class KafkaServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->publishes([__DIR__.'/../config/kafka.php' => config_path('kafka.php')], 'nestlaravel-kafka-config');
-            $this->commands([OutboxPublishCommand::class, KafkaConsumeCommand::class, SagaRecoverCommand::class]);
+
+            if (config('kafka.register.commands', true)) {
+                $this->commands([OutboxPublishCommand::class, KafkaConsumeCommand::class, SagaRecoverCommand::class]);
+            }
         }
     }
 

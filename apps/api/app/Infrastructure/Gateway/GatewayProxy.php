@@ -3,10 +3,12 @@
 namespace App\Infrastructure\Gateway;
 
 use App\Core\Exceptions\ExternalServiceException;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use NestLaravel\Kafka\Resilience\CircuitOpenException;
+use NestLaravel\Kafka\Resilience\ResilientHttp;
+use NestLaravel\Kafka\Resilience\UpstreamUnavailableException;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -15,6 +17,7 @@ final class GatewayProxy
     public function __construct(
         private readonly ServiceRegistry $registry,
         private readonly GatewaySigner $signer,
+        private readonly ResilientHttp $http = new ResilientHttp,
     ) {}
 
     public function forward(string $serviceName, string $path, Request $request): SymfonyResponse
@@ -58,23 +61,33 @@ final class GatewayProxy
 
         $body = $request->getContent();
 
+        $userId = $request->user()?->getAuthIdentifier() !== null ? (string) $request->user()->getAuthIdentifier() : null;
+        $tenantId = $this->tenantOf($request);
+        $forwarded = $this->headers($service, $request) + ['Content-Type' => $request->header('Content-Type', 'application/json')];
+
         try {
             /** @var Response $response */
-            $response = Http::withHeaders($this->headers($service, $request) + $this->signer->sign(
-                $service->secret,
+            $response = $this->http->send(
+                $serviceName,
                 $request->method(),
-                $pathAndQuery,
+                $url,
                 $body,
-                $request->user()?->getAuthIdentifier() !== null ? (string) $request->user()->getAuthIdentifier() : null,
-                tenantId: $this->tenantOf($request),
-            ))
-                ->withoutRedirecting()
-                ->timeout($service->timeout)
-                ->withBody($body, $request->header('Content-Type', 'application/json'))
-                ->send($request->method(), $url);
-        } catch (ConnectionException $e) {
-            throw new ExternalServiceException(
-                "Gateway could not reach [{$serviceName}] at {$service->baseUrl}: {$e->getMessage()}",
+                // A FRESH signature (timestamp + single-use nonce) for every attempt, including retries.
+                fn (int $attempt): array => $forwarded + $this->signer->sign($service->secret, $request->method(), $pathAndQuery, $body, $userId, tenantId: $tenantId),
+                $service->resilience,
+            );
+        } catch (CircuitOpenException $e) {
+            Log::warning('Gateway circuit open', ['service' => $serviceName, 'retry_after' => $e->retryAfter]);
+
+            throw new GatewayUnavailableException("Service [{$serviceName}] is temporarily unavailable.", 503, $e->retryAfter, $e);
+        } catch (UpstreamUnavailableException $e) {
+            // Details (host, curl error) stay in the log; the client only learns what it needs to.
+            Log::error('Gateway upstream unreachable', ['service' => $serviceName, 'error' => $e->getMessage()]);
+            $timedOut = str_contains(strtolower($e->getMessage()), 'timed out') || str_contains(strtolower($e->getMessage()), 'timeout');
+
+            throw new GatewayUnavailableException(
+                $timedOut ? "Service [{$serviceName}] did not respond in time." : "Service [{$serviceName}] is unreachable.",
+                $timedOut ? 504 : 502,
                 previous: $e,
             );
         }
