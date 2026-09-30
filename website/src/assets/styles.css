@@ -196,7 +196,7 @@ dialog#search::backdrop { background: rgba(3, 8, 20, .6); }
 .legal { border-top: 1px solid var(--line); margin-top: 30px; padding-top: 18px; color: var(--muted); font-size: .9rem; }
 
 /* header collapses earlier: 8 nav items + actions need ~1080px */
-@media (max-width: 1080px) {
+@media (max-width: 1240px) {
   .menu-btn { display: grid; }
   nav.primary { display: none; position: absolute; top: 64px; left: 0; right: 0; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 20px 16px; margin: 0; }
   nav.primary.open { display: block; } nav.primary ul { flex-direction: column; }
@@ -207,3 +207,27 @@ dialog#search::backdrop { background: rgba(3, 8, 20, .6); }
 article.doc { min-width: 0; overflow-wrap: anywhere; }
 article.doc pre { overflow-wrap: normal; }
 .hero-grid > *, .split > * { min-width: 0; }
+
+/* header robustness: nothing may push the actions outside the bar */
+.bar { min-width: 0; }
+.brand { flex-shrink: 0; white-space: nowrap; }
+nav.primary { min-width: 0; }
+nav.primary a { white-space: nowrap; }
+.bar-actions { flex-shrink: 0; margin-left: auto; }
+.bar-actions .btn { white-space: nowrap; padding: 8px 14px; }
+@media (min-width: 1241px) { nav.primary { margin-left: 8px; } nav.primary a { padding: 8px 10px; } }
+@media (max-width: 420px) {
+  .wrap { padding: 0 14px; }
+  .bar { gap: 8px; }
+  .brand span { font-size: 1rem; }
+  .brand svg { width: 26px; height: 26px; }
+  .bar-actions { gap: 6px; }
+  .icon-btn { width: 36px; height: 36px; }
+  .search-btn { padding: 0 9px; }
+}
+
+.steps li, .split > *, .code { min-width: 0; max-width: 100%; }
+.steps .code pre { overflow-x: auto; }
+
+.pager .pn { min-width: 0; flex: 1 1 0; overflow-wrap: anywhere; }
+.site-header .wrap { max-width: 1360px; }

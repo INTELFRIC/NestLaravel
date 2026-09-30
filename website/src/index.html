@@ -368,6 +368,28 @@ KAFKA_SECURITY_PROTOCOL=plaintext</code></pre></div></div>
   </div>
 </section>
 
+<!-- ================= CLIENTS ================= -->
+<section id="clients" aria-labelledby="h-clients">
+  <div class="wrap">
+    <h2 class="title" id="h-clients">Web, desktop and mobile clients</h2>
+    <p class="sub">Use any front-end technology. Every client talks to the gateway only; you create the app with its own tool and connect it in five steps. <a href="/docs/frontend.html">Read the guide</a>.</p>
+    <div class="grid">
+      <div class="card reveal"><h3>Web-based</h3><p>Next.js, React (Vite), Vue, Angular, plain HTML/JS, TypeScript.</p>
+        <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx create-next-app@latest web --ts --app
+npm create vite@latest web -- --template react-ts</code></pre></div>
+        <p><a href="/docs/frontend.html#web-based-clients">Add a web app &rarr;</a></p></div>
+      <div class="card reveal"><h3>Desktop-based</h3><p>Tauri, Electron (web UI in a native shell) or Flutter desktop for Windows, macOS and Linux.</p>
+        <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npm create tauri-app@latest desktop
+flutter create desktop --platforms windows,macos,linux</code></pre></div>
+        <p><a href="/docs/frontend.html#desktop-based-clients">Add a desktop app &rarr;</a></p></div>
+      <div class="card reveal"><h3>Mobile-based</h3><p>Flutter, React Native, Swift or Kotlin for Android and iOS. No CORS; token in the platform keystore.</p>
+        <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>flutter create mobile --platforms android,ios
+flutter run --dart-define=API_URL=http://10.0.2.2:8000/api</code></pre></div>
+        <p><a href="/docs/frontend.html#mobile-based-clients">Add a mobile app &rarr;</a></p></div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= PRODUCTION ================= -->
 <section class="alt" id="production" aria-labelledby="h-prod">
   <div class="wrap">

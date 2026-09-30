@@ -4,6 +4,16 @@ NestLaravel does not force a frontend stack. Any web or mobile client — **Next
 Flutter, Vue, Angular, React Native, Swift, Kotlin** — can sit in the workspace or live in its own repository. There is
 no generator to learn: you create the app with that framework's own tool, then connect it with the five steps below.
 
+## Pick your client type
+
+| Type | Runs on | Good choices | Section |
+|------|---------|--------------|---------|
+| **Web-based** | any browser | Next.js, React (Vite), Vue/Angular/Svelte, plain HTML/JS, TypeScript | [Web](#web-based-clients) |
+| **Desktop-based** | Windows · macOS · Linux | Electron, Tauri (web UI in a native shell), Flutter desktop | [Desktop](#desktop-based-clients) |
+| **Mobile-based** | Android · iOS | Flutter, React Native, Swift, Kotlin | [Mobile](#mobile-based-clients) |
+
+All three use the same gateway API, the same login flow and the same five steps below.
+
 ## The one rule
 
 ```text
@@ -66,6 +76,11 @@ A target named `serve` is started by `npx nestlaravel dev`; `test`, `lint` and `
 > `"apps/web"`) and run `npm install` at the root. Skip this for Flutter and static HTML.
 
 ---
+
+## Web-based clients
+
+Browser apps: [Next.js](#nextjs-typescript), [React + Vite](#react-vite--typescript), [plain HTML/JS](#plain-html--javascript-no-build-step)
+and the [shared TypeScript client](#typescript-client-shared). They need the origin in `CORS_ALLOWED_ORIGINS`.
 
 ## Next.js (TypeScript)
 
@@ -204,6 +219,79 @@ To share it across apps: create `packages/api-client/package.json` (`"name": "@w
 add `"packages/api-client"` to root `workspaces`, add `"@workspace/api-client": "*"` to each app's dependencies, and
 (Next.js) `transpilePackages: ['@workspace/api-client']` in `next.config.ts`. The repository's own
 `packages/api-client` is exactly this pattern.
+
+## Desktop-based clients
+
+Desktop apps are usually a web UI (React/Vite, Next.js static export, plain HTML) inside a native shell, or a Flutter
+desktop build. Build the UI exactly as in the web sections above, then wrap it:
+
+### Tauri (small, Rust shell) — web UI + native window
+
+```bash
+cd apps
+npm create tauri-app@latest desktop      # choose: TypeScript, npm, React (Vite)
+cd desktop && npm install
+npm run tauri dev                        # build: npm run tauri build  → installers for the current OS
+```
+
+* Requires the Rust toolchain and your OS's WebView build tools (see the Tauri prerequisites page).
+* **CORS:** the UI origin is `tauri://localhost` (or `http://tauri.localhost` on Windows). Either add that origin to
+  `CORS_ALLOWED_ORIGINS`, or — better — make requests from Rust with `tauri-plugin-http` (no browser CORS at all).
+* **Token storage:** OS keychain (for example the `keyring` crate / `tauri-plugin-stronghold`), not `localStorage`.
+* Set the gateway URL through a Vite env var (`VITE_API_URL`) or `tauri.conf.json` — never embed secrets.
+
+### Electron (Node shell) — web UI + native window
+
+```bash
+cd apps
+npm create vite@latest desktop -- --template react-ts
+cd desktop && npm install
+npm install -D electron electron-builder concurrently wait-on cross-env
+```
+
+Minimal `electron/main.cjs`:
+
+```js
+const { app, BrowserWindow, ipcMain, safeStorage } = require('electron');
+const path = require('node:path');
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({
+    width: 1100, height: 760,
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, 'preload.cjs') },
+  });
+  const dev = process.env.ELECTRON_DEV_URL;
+  dev ? win.loadURL(dev) : win.loadFile(path.join(__dirname, '../dist/index.html'));
+});
+```
+
+Wire it in `package.json`: `"main": "electron/main.cjs"`, `"dev:electron": "concurrently \"vite --port 5174 --strictPort\" \"wait-on tcp:5174 && cross-env ELECTRON_DEV_URL=http://localhost:5174 electron .\""`.
+
+* **Security defaults are not optional:** `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, load only your own
+  code, set a CSP, expose a minimal API through `preload` (`contextBridge`).
+* **CORS:** a packaged app loads from `file://` (origin `null`). Do the gateway calls in the **main process**
+  (`fetch` in Node has no CORS) and expose them through IPC, or serve the UI from a custom protocol and allow that origin.
+* **Token storage:** encrypt with `safeStorage.encryptString()` (OS keychain-backed) and keep the ciphertext in your app data
+  folder; never store it in `localStorage`.
+* Package with `electron-builder` (NSIS/MSI, dmg, AppImage/deb); sign and notarise for distribution.
+
+### Flutter desktop (Windows · macOS · Linux)
+
+```bash
+cd apps
+flutter create desktop --platforms windows,macos,linux --project-name desktop_app
+cd desktop && flutter pub add http flutter_secure_storage
+flutter run -d windows        # or macos / linux;  build: flutter build windows|macos|linux
+```
+
+Use the same [Dart client](#flutter-android--ios--web) as mobile (default URL `http://127.0.0.1:8000/api`). Native desktop
+apps have no CORS. Enable your OS's build prerequisites (`flutter doctor` lists them).
+
+## Mobile-based clients
+
+Native or cross-platform apps for Android and iOS: [Flutter](#flutter-android--ios--web) below, plus the
+[other stacks](#other-stacks-vue-angular-svelte-react-native-swift-kotlin-) (React Native, Swift, Kotlin). No CORS; use
+HTTPS in production and the platform keystore for the token.
 
 ## Flutter (Android · iOS · web)
 
