@@ -64,5 +64,5 @@ apps.
 ### Migration
 `npx nestlaravel update --adopt --dry-run`, then `npx nestlaravel update --adopt`.
 
-[Unreleased]: https://github.com/REPLACE_ME/nestlaravel/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/REPLACE_ME/nestlaravel/releases/tag/v1.0.0
+[Unreleased]: https://github.com/INTELFRIC/NestLaravel/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/INTELFRIC/NestLaravel/releases/tag/v1.0.0

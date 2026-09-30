@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please report privately (GitHub Security Advisories → "Report a vulnerability", or security@nestlaravel.dev). Do not open
+Please report privately (GitHub Security Advisories → "Report a vulnerability", or the maintainers via GitHub Security Advisories). Do not open
 public issues for vulnerabilities. We acknowledge within 72 hours and coordinate disclosure.
 
 ## Threat model in one page

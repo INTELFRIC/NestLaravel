@@ -169,7 +169,7 @@ export async function create(argv) {
   log.cmd('npx nestlaravel generate service orders');
   log.cmd('npx nestlaravel dev');
   log.blank();
-  log.info(c.dim(`Docs: https://nestlaravel.dev  ·  Manifest: ${MANIFEST}`));
+  log.info(c.dim(`Docs: https://nestlaravel.intelfric.com  ·  Manifest: ${MANIFEST}`));
   if (!existsSync(join(root, 'apps', 'api', 'vendor'))) {
     log.warn('Dependencies are not installed yet — run composer install (apps/api) and npm install.');
   }

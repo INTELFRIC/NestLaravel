@@ -13,6 +13,7 @@
     "scaffold"
   ],
   "license": "MIT",
+  "author": "Dr. Constantino Msigwa, Intelfric Technology Limited",
   "type": "module",
   "bin": {
     "nestlaravel": "bin/nestlaravel.js"
@@ -40,11 +41,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/REPLACE_ME/nestlaravel.git",
+    "url": "git+https://github.com/INTELFRIC/NestLaravel.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/REPLACE_ME/nestlaravel/issues"
+    "url": "https://github.com/INTELFRIC/NestLaravel/issues"
   },
-  "homepage": "https://nestlaravel.dev"
+  "homepage": "https://nestlaravel.intelfric.com"
 }

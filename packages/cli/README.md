@@ -12,6 +12,6 @@ npx nestlaravel dev
 Requires Node >= 20.11, PHP >= 8.3 (with `mbstring openssl pdo tokenizer xml ctype json fileinfo bcmath`),
 Composer >= 2.6. Docker is recommended for Kafka/Postgres/Redis.
 
-Run `npx nestlaravel --help` for all commands, or see the full documentation at https://nestlaravel.dev.
+Run `npx nestlaravel --help` for all commands, or see the full documentation at https://nestlaravel.intelfric.com.
 
 License: MIT
