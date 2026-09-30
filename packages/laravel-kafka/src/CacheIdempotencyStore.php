@@ -18,11 +18,11 @@ final class CacheIdempotencyStore implements IdempotencyStore
 
     public function has(string $key): bool
     {
-        return Cache::store($this->store)->has($this->prefix.$key);
+        return Cache::store($this->store ?: null)->has($this->prefix.$key);
     }
 
     public function remember(string $key, int $ttlSeconds = 86400): void
     {
-        Cache::store($this->store)->put($this->prefix.$key, 1, max(1, $ttlSeconds));
+        Cache::store($this->store ?: null)->put($this->prefix.$key, 1, max(1, $ttlSeconds));
     }
 }

@@ -90,7 +90,7 @@ return [
             'window' => (int) env('GATEWAY_BREAKER_WINDOW', 30),
             'open' => (int) env('GATEWAY_BREAKER_OPEN', 20),
         ],
-        'cache_store' => env('GATEWAY_STATE_CACHE_STORE'),
+        'cache_store' => env('GATEWAY_STATE_CACHE_STORE') ?: null,
     ],
 
     /*

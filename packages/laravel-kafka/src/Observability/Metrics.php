@@ -209,7 +209,7 @@ final class Metrics
 
     private static function store(): \Illuminate\Contracts\Cache\Repository
     {
-        return Cache::store(config('kafka.metrics.store'));
+        return Cache::store(config('kafka.metrics.store') ?: null);
     }
 
     /**

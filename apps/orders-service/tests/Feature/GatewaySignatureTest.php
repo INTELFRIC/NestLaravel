@@ -46,6 +46,15 @@ class GatewaySignatureTest extends TestCase
             ->assertOk();
     }
 
+    public function test_an_empty_nonce_store_setting_means_the_default_store(): void
+    {
+        // Generated .env files ship "INTERNAL_NONCE_STORE=" (empty). env() returns '', and Laravel treats '' as a store NAME.
+        config(['internal.nonce_store' => '']);
+
+        $this->withHeaders($this->signed('GET', '/api/v1/orders/health'))->get('/api/v1/orders/health', ['Accept' => 'application/json'])
+            ->assertOk();
+    }
+
     public function test_wrong_secret_is_rejected(): void
     {
         $this->withHeaders($this->signed('GET', '/api/v1/orders/health', secret: 'other'))->get('/api/v1/orders/health', ['Accept' => 'application/json'])

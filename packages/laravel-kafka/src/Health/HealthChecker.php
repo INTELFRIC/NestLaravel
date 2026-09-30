@@ -101,7 +101,7 @@ final class HealthChecker
     private function database(): array
     {
         return $this->timed(function () {
-            DB::connection(config('kafka.health.database_connection'))->select('select 1');
+            DB::connection(config('kafka.health.database_connection') ?: null)->select('select 1');
 
             return ['status' => 'ok'];
         }, 'Database unavailable');

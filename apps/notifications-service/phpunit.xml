@@ -29,6 +29,8 @@
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>
         <server name="BROADCAST_CONNECTION" value="null" force="true"/>
         <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="KAFKA_SCHEMA_ENFORCE_PRODUCER" value="false" force="true"/>
+        <env name="KAFKA_SCHEMA_ENFORCE_CONSUMER" value="false" force="true"/>
         <server name="CACHE_STORE" value="array" force="true"/>
         <env name="DB_CONNECTION" value="sqlite" force="true"/>
         <server name="DB_CONNECTION" value="sqlite" force="true"/>

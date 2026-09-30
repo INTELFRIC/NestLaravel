@@ -77,7 +77,7 @@ final class VerifyGatewaySignature
 
         // Single use within the validity window (both clock directions).
         try {
-            $fresh = Cache::store(config('internal.nonce_store'))->add('gateway-nonce:'.$nonce, 1, $ttl * 2);
+            $fresh = Cache::store(config('internal.nonce_store') ?: null)->add('gateway-nonce:'.$nonce, 1, $ttl * 2);
         } catch (Throwable $e) {
             Log::error('Replay-protection store unavailable', ['error' => $e->getMessage()]);
 

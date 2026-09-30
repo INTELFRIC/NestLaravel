@@ -34,6 +34,6 @@ final class LaravelCacheStore implements CacheStore
 
     private function cache(): Repository
     {
-        return Cache::store($this->store ?? config('cache.default'));
+        return Cache::store($this->store ?: config('cache.default'));
     }
 }

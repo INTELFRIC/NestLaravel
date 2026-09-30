@@ -134,6 +134,6 @@ final class CircuitBreaker
 
     private function cache(): Repository
     {
-        return Cache::store($this->store);
+        return Cache::store($this->store ?: null);
     }
 }

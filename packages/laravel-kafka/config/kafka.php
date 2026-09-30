@@ -187,7 +187,7 @@ return [
     'metrics' => [
         'enabled' => (bool) env('METRICS_ENABLED', true),
         // Cache store shared by all processes of this service (redis in production). null = default store.
-        'store' => env('METRICS_CACHE_STORE'),
+        'store' => env('METRICS_CACHE_STORE') ?: null,
         // Bearer token required for GET /metrics. Empty = endpoint disabled (fail closed).
         'token' => env('METRICS_TOKEN'),
         // One histogram observation per SQL query (nestlaravel_db_query_duration_seconds). Off by default: measurable overhead.
@@ -218,7 +218,7 @@ return [
         // Register /liveness /startup /readiness /health (the API gateway keeps its own and sets this to false).
         'routes' => (bool) env('HEALTH_ROUTES', true),
         // Connection used by the database check (null = default connection).
-        'database_connection' => env('HEALTH_DB_CONNECTION'),
+        'database_connection' => env('HEALTH_DB_CONNECTION') ?: null,
     ],
 
     /*
@@ -269,7 +269,7 @@ return [
         'idempotency_ttl' => (int) env('KAFKA_IDEMPOTENCY_TTL', 86400),
         'log_path' => env('KAFKA_LOG_CONSUMER_PATH', storage_path('framework/kafka')),
         // Cache store used for duplicate suppression (null = default cache store).
-        'idempotency_store' => env('KAFKA_IDEMPOTENCY_STORE'),
+        'idempotency_store' => env('KAFKA_IDEMPOTENCY_STORE') ?: null,
         'idempotency_prefix' => env('KAFKA_IDEMPOTENCY_PREFIX', 'kafka:processed:'),
     ],
 

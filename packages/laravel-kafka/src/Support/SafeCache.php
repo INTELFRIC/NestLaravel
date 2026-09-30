@@ -40,7 +40,7 @@ final class SafeCache
         }
 
         try {
-            return Cache::store($this->store)->remember($key, $ttlSeconds, $compute);
+            return Cache::store($this->store ?: null)->remember($key, $ttlSeconds, $compute);
         } catch (Throwable $e) {
             $this->degraded($e, 'remember');
 
@@ -55,7 +55,7 @@ final class SafeCache
         }
 
         try {
-            return Cache::store($this->store)->get($key, $default);
+            return Cache::store($this->store ?: null)->get($key, $default);
         } catch (Throwable $e) {
             $this->degraded($e, 'get');
 
@@ -70,7 +70,7 @@ final class SafeCache
         }
 
         try {
-            return Cache::store($this->store)->put($key, $value, $ttlSeconds);
+            return Cache::store($this->store ?: null)->put($key, $value, $ttlSeconds);
         } catch (Throwable $e) {
             $this->degraded($e, 'put');
 
@@ -85,7 +85,7 @@ final class SafeCache
         }
 
         try {
-            return Cache::store($this->store)->forget($key);
+            return Cache::store($this->store ?: null)->forget($key);
         } catch (Throwable $e) {
             $this->degraded($e, 'forget');
 

@@ -72,7 +72,7 @@ final class KafkaServiceProvider extends ServiceProvider
 
         $this->app->singleton(IdempotencyStore::class, static fn (): IdempotencyStore => new CacheIdempotencyStore(
             (string) config('kafka.consumer_pipeline.idempotency_prefix', 'kafka:processed:'),
-            config('kafka.consumer_pipeline.idempotency_store'),
+            config('kafka.consumer_pipeline.idempotency_store') ?: null,
         ));
 
         $this->app->singleton(KafkaProducer::class, function ($app): KafkaProducer {
