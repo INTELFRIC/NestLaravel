@@ -9,14 +9,23 @@ npm i -D nestlaravel                       # or per-project (create adds it for 
 |---------|--------------|
 | `create <name>` | New workspace. `--db sqlite\|pgsql\|mysql`, `--with-portals`, `--migrate`, `--skip-install`, `--skip-git`, `--skip-validate`, `-y` |
 | `generate service <name>` | New Laravel microservice (see [MICROSERVICES.md](MICROSERVICES.md)). `--port N`, `--force`, `--skip-install` |
+| `generate event <type>` | **Schema-governed** event (recommended, 1.1+): class with an `EventSchema`, registered in `config/kafka.php` `events`. `--service <svc>` (services only), `--version N` (a new version is a new class `OrderCreatedV2`, published versions stay untouched), `--force` |
 | `generate kafka-event <type>` | Domain event class (+ `--consumer` handler). `--service <svc>` (use `api` for the gateway) |
 | `generate kafka-topic <name>` | Registers a topic in `config/kafka.php` and `.env.example`. `--service <svc>`, `--create` (creates it + `.dlq` on the dev broker) |
 | `add tenancy` | Installs the multi-tenancy package ([MULTI-TENANCY.md](MULTI-TENANCY.md)). `--service a,b` |
 | `dev` | Starts Kafka/Postgres/Redis (Docker) then serves all apps via Nx. `--no-infra`, `--docker` (full containerised stack) |
 | `test` / `lint` | `nx run-many -t test\|lint`. `--affected`, `--project <name>`, extra Nx args after `--` |
 | `build` | Production Docker images via Nx. `--tag 1.2.3`, `--registry ghcr.io/acme` |
-| `doctor` | Verifies Node, npm, PHP (+ extensions), Composer, Git, Docker, php-rdkafka |
+| `doctor` | Verifies Node, npm, PHP (+ extensions), Composer, Git, Docker, php-rdkafka, pcntl (graceful shutdown) and, inside a workspace, each app's `.env`, `APP_KEY`, signing secret length and dependencies |
+| `production:check` | Runs `php artisan nestlaravel:check` in every app plus workspace checks; prints **PASS / WARN / FAIL**; exit 1 on any FAIL. `--service <name>`, `--json`. A clean result means "no known misconfiguration", not "production ready" |
+| `events:list` / `events:check` | Registered events, versions and required fields / fails when a version newly requires a field the previous one did not guarantee |
+| `kafka:health` | Broker connectivity probe (no secrets in the output) |
+| `outbox:status` | Outbox counts, oldest pending age, failed rows. `--failed`, `--requeue` (put failed rows back to pending), `--json` |
+| `dlq:list [topic]` | Peek dead-lettered messages without consuming them. `--limit`, `--json` |
+| `tenant:check` | Audits models/tables for tenant-isolation gaps (needs `nestlaravel add tenancy`) |
 | `update` | Safe upgrade of an existing workspace. `--dry-run`, `--adopt`, `--allow-major`, `-y` |
+
+The operate commands (`production:check`, `events:*`, `kafka:health`, `outbox:status`, `dlq:list`, `tenant:check`) forward to `php artisan` in one app (`--service orders`) or in every app; any other option is passed through.
 
 Aliases: `new`=`create`, `g`/`gen`=`generate`, `serve`=`dev`, `upgrade`=`update`.
 Equivalent Nx usage works everywhere: `npx nx test orders-service`, `npx nx serve api`, `npx nx graph`.

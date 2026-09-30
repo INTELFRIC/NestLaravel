@@ -222,9 +222,19 @@ final class ProductionChecker
             ? $this->pass('tracing', 'OpenTelemetry span export enabled')
             : $this->warn('tracing', 'Distributed tracing export disabled (trace ids are still propagated and logged)');
 
-        config('kafka.metrics.enabled', true)
-            ? $this->pass('metrics', 'Metrics collection enabled')
-            : $this->warn('metrics', 'METRICS_ENABLED=false');
+        if (! config('kafka.metrics.enabled', true)) {
+            $this->warn('metrics', 'METRICS_ENABLED=false');
+
+            return;
+        }
+
+        $store = (string) (config('kafka.metrics.store') ?: config('cache.default'));
+        $driver = (string) config("cache.stores.{$store}.driver", $store);
+
+        in_array($driver, ['database', 'file', 'array'], true)
+            ? $this->warn('metrics', "Metrics are kept in the '{$store}' cache store ({$driver}): every metric write is a SQL query / file write"
+                .($driver === 'array' ? ' and is lost at the end of each request' : '').'. Point METRICS_CACHE_STORE at redis for production')
+            : $this->pass('metrics', "Metrics collection enabled (cache store '{$store}', driver {$driver})");
     }
 
     private function operations(): void

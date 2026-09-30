@@ -64,17 +64,21 @@ Cross-module access uses contracts or events, never another module's Eloquent mo
 ```json
 {
   "event_id": "uuid",            "event_type": "orders.order.created",
-  "version": 1,                  "occurred_at": "2026-09-30T00:00:00+00:00",
+  "event_version": 1,            "version": 1,   // legacy alias of event_version
+  "occurred_at": "2026-09-30T00:00:00+00:00",
   "source": "orders-service",    "producer": "orders-service",
   "aggregate_id": "1001",        "aggregate_type": "order",
   "correlation_id": "uuid",      "causation_id": null,
-  "tenant_id": "acme",           "payload": {}
+  "tenant_id": "acme",           "traceparent": "00-4bf92f35…-00f067aa…-01",
+  "payload": {}
 }
 ```
 
-This is the framework's pre-existing envelope (richer than the minimal one in the brief) plus `source`
-(alias of `producer`, the name used by the wider ecosystem) and the optional `tenant_id`. Key = `aggregate_id`, so
-all events for one aggregate are ordered within a partition. See [KAFKA.md](KAFKA.md).
+`source` is an alias of `producer`; `tenant_id` and `traceparent` are optional. `event_version` selects the payload schema (1.0
+producers only send `version`, which consumers still accept). Payloads are validated against a per-version schema and
+events created while handling another event inherit its `correlation_id` and use its `event_id` as `causation_id`.
+Key = `aggregate_id`, so all events for one aggregate are ordered within a partition. See [KAFKA.md](KAFKA.md) and
+[RELIABILITY.md](RELIABILITY.md).
 
 ## Data ownership
 
@@ -91,6 +95,7 @@ project so `@nx/enforce-module-boundaries`-style rules can be added when the wor
 
 * The gateway keeps its own copy of the Kafka classes (`app/Infrastructure/Kafka`, `app/Messaging`); services use the
   shared `nestlaravel/kafka` package. Migrating the gateway to the package is planned for 1.x (pure namespace change).
-* Outbox publishing assumes **one publisher per service** (rows are not claimed across workers). Scale consumers, not
-  publishers.
+* Outbox rows are claimed atomically, so several publishers never publish the same row, but **one publisher per service** is
+  recommended: with several, events of one aggregate may be reordered. Scale consumers, not publishers.
+* Reliability guarantees, what is proven by tests and what is not: [RELIABILITY.md](RELIABILITY.md), [RELIABILITY-AUDIT.md](RELIABILITY-AUDIT.md).
 * Portals keep the API token in `localStorage`; see [SECURITY.md](SECURITY.md) for the recommended hardening.

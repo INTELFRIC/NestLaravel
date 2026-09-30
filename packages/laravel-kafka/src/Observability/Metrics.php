@@ -2,6 +2,7 @@
 
 namespace NestLaravel\Kafka\Observability;
 
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 use Throwable;
 
@@ -35,7 +36,7 @@ final class Metrics
     {
         self::write(function () use ($name, $labels, $by, $help): void {
             $key = self::series('counter', $name, $labels, $help);
-            self::store()->increment($key, $by);
+            self::bump(self::store(), $key, $by);
         });
     }
 
@@ -58,11 +59,16 @@ final class Metrics
         self::write(function () use ($name, $seconds, $labels, $help): void {
             $base = self::series('histogram', $name, $labels, $help);
             $store = self::store();
-            $store->increment($base.':count');
-            $store->increment($base.':sum_us', (int) round($seconds * 1_000_000));
+            self::bump($store, $base.':count', 1);
+            self::bump($store, $base.':sum_us', (int) round($seconds * 1_000_000));
+            // One write per observation: only the smallest bucket that fits is incremented; render() accumulates.
+            // (Cumulative buckets would cost up to 11 extra cache writes per observation — each one a SQL query on the
+            // database cache store.)
             foreach (self::BUCKETS as $i => $le) {
                 if ($seconds <= $le) {
-                    $store->increment($base.':b'.$i);
+                    self::bump($store, $base.':b'.$i, 1);
+
+                    break;
                 }
             }
         });
@@ -107,7 +113,7 @@ final class Metrics
                 if ($type === 'histogram') {
                     $cumulative = 0;
                     foreach (self::BUCKETS as $i => $le) {
-                        $cumulative = (int) $store->get($base.':b'.$i, 0);
+                        $cumulative += (int) $store->get($base.':b'.$i, 0);
                         $out[] = $name.'_bucket'.self::fmt($labels + ['le' => (string) $le]).' '.$cumulative;
                     }
                     $count = (int) $store->get($base.':count', 0);
@@ -206,16 +212,38 @@ final class Metrics
         return Cache::store(config('kafka.metrics.store'));
     }
 
+    /**
+     * Increment that also works on the first write. Array/Redis create a missing key; the DATABASE cache store (Laravel's
+     * default) returns false and stores nothing, which silently lost every counter.
+     */
+    private static function bump(Repository $store, string $key, int $by): void
+    {
+        if ($store->increment($key, $by) === false) {
+            $store->add($key, 0);
+            $store->increment($key, $by);
+        }
+    }
+
+    /** True while a metric is being written: the write itself must never be measured or counted (see write()). */
+    private static bool $writing = false;
+
     private static function write(callable $fn): void
     {
-        if (! self::enabled()) {
+        // Re-entrancy guard. With the database cache store a metric write IS a SQL query; the query listener would record
+        // it as a metric, which writes to the cache, which runs a query… until PHP runs out of stack. Nested writes are
+        // dropped instead.
+        if (self::$writing || ! self::enabled()) {
             return;
         }
+
+        self::$writing = true;
 
         try {
             $fn();
         } catch (Throwable) {
             self::$failures++;
+        } finally {
+            self::$writing = false;
         }
     }
 }

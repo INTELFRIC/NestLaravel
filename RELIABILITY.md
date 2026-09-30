@@ -154,12 +154,15 @@ recovery (`SagaTest`, 12 tests).
 
 Not claimed, because not proven by automated tests in this repository:
 
-1. **Real multi-process inbox concurrency** is tested against PostgreSQL only in CI (`ConcurrentInboxTest`), not on
-   MySQL/MariaDB; SQLite (tests) serialises writers.
+1. **Real multi-process inbox concurrency** is tested in CI against PostgreSQL 16 and MySQL 8.4 (`ConcurrentInboxTest`, separate OS
+   processes, CI job "Reliability on real databases"; it fails the build if skipped). MariaDB, other isolation levels, replicas /
+   failover and cluster setups are not tested; SQLite (unit tests) serialises writers and proves only the logic.
 2. **End-to-end with a real broker** covers produce → consume → DLQ (`RdKafkaBrokerTest`) in CI; broker restarts,
    network partitions and rebalance storms are **not** automated (documented drills in [OPERATIONS.md](OPERATIONS.md)).
-3. **Graceful shutdown** is tested for the consumer and outbox daemon on Linux (pcntl). HTTP drain depends on your
-   proxy/orchestrator settings (provided in `infrastructure/k8s`, not exercised here).
+3. **Graceful shutdown** is tested for the consumer and outbox daemon on Linux CI (`GracefulShutdownTest`: a real SIGTERM while a
+   message/batch is in flight). Those tests are skipped without ext-pcntl (Windows), so they do not run on a Windows dev machine.
+   HTTP drain depends on your proxy/orchestrator settings (provided in `infrastructure/k8s`, validated as manifests by
+   kubeconform, never deployed to a cluster by CI).
 4. **OpenTelemetry** export is an OTLP/HTTP JSON exporter verified against a fake collector, not against a real
    Collector/Jaeger/Tempo.
 5. **Kafka ACLs, TLS certificate rotation, broker replication** are operator responsibilities and are not verifiable
@@ -169,3 +172,8 @@ Not claimed, because not proven by automated tests in this repository:
    publishers are safe (no double publish) but may reorder events of one aggregate.
 8. **Performance overhead** is measured on a developer machine with SQLite ([BENCHMARKS.md](BENCHMARKS.md)); production
    numbers depend on your database and broker.
+9. **The reference application and the chaos scenarios** ([REFERENCE-APP.md](REFERENCE-APP.md), `ChaosScenariosTest`) run on an
+   in-memory broker and one shared SQLite database. They prove the logic of crash/duplicate/compensation handling end to
+   end, not the behaviour of real independent databases, a real cluster, or network faults.
+10. **Effects outside your database** (payment providers, e-mail) are outside every transaction here; only idempotency keys on
+    those calls make them safe to repeat.

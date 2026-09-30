@@ -211,15 +211,32 @@ my-project is ready.</code></pre></div>
      ▼              ▼
 Orders service   Notifications service</code></pre></div>
       <ul style="color:var(--muted);margin:0">
-        <li><strong style="color:var(--text)">Producers</strong> write events to a transactional outbox; a publisher ships them after broker confirmation.</li>
-        <li><strong style="color:var(--text)">Consumers &amp; groups</strong> run in a consumer group per service; offsets are committed only after success.</li>
-        <li><strong style="color:var(--text)">Topics &amp; events</strong> use one envelope: <code>event_id</code>, <code>event_type</code>, <code>version</code>, <code>source</code>, <code>correlation_id</code>, <code>payload</code>.</li>
+        <li><strong style="color:var(--text)">Producers</strong> write events to a transactional outbox; concurrency-safe publishers ship them after broker confirmation.</li>
+        <li><strong style="color:var(--text)">Consumers &amp; groups</strong> run in a consumer group per service; offsets are committed only after success. A transactional <em>inbox</em> makes redelivered events harmless.</li>
+        <li><strong style="color:var(--text)">Topics &amp; events</strong> use one envelope: <code>event_id</code>, <code>event_type</code>, <code>event_version</code>, <code>producer</code>, <code>correlation_id</code>, <code>causation_id</code>, <code>tenant_id</code>, <code>traceparent</code>, <code>payload</code>.</li>
         <li><strong style="color:var(--text)">Retries &amp; dead letters</strong>: exponential backoff, then <code>&lt;topic&gt;.dlq</code>; poison messages skip retries.</li>
-        <li><strong style="color:var(--text)">Versioning</strong>: consumers dead-letter events newer than the schema they support.</li>
+        <li><strong style="color:var(--text)">Schemas &amp; versioning</strong>: payloads are validated against a per-version schema; a compatibility check fails the build on breaking changes.</li>
         <li><strong style="color:var(--text)">Correlation IDs</strong> flow from the gateway request into events and logs.</li>
       </ul>
     </div>
     <p style="margin-top:20px"><a class="btn btn-ghost" href="/docs/kafka.html">Learn Kafka Architecture &rarr;</a></p>
+  </div>
+</section>
+
+<!-- ================= RELIABILITY ================= -->
+<section class="alt" id="reliability" aria-labelledby="h-rel">
+  <div class="wrap">
+    <h2 class="title" id="h-rel">Reliability you can verify</h2>
+    <p class="sub">Every guarantee names the automated test that demonstrates it. What is <em>not</em> proven is listed next to it, not hidden.</p>
+    <div class="grid">
+      <div class="card"><h3>Exactly-once effects</h3><p>Transactional outbox and inbox: a crash between the database commit and the Kafka offset commit cannot charge twice. Multi-process races are tested on real PostgreSQL and MySQL in CI.</p></div>
+      <div class="card"><h3>Failure handling</h3><p>Broker down, consumer crash, poison messages, failing dead-letter topic: each has a defined outcome and a test. Nothing is acknowledged before it succeeds.</p></div>
+      <div class="card"><h3>Sagas</h3><p><code>Saga::define()-&gt;step()-&gt;compensate()</code> with persisted state, timeouts, retries and reverse-order compensation.</p></div>
+      <div class="card"><h3>Observability</h3><p>JSON logs with correlation, trace and tenant ids and secret redaction; Prometheus metrics; W3C trace propagation; optional OTLP export.</p></div>
+      <div class="card"><h3>Health &amp; shutdown</h3><p>Liveness that never depends on Kafka, readiness on the dependencies you choose, SIGTERM that finishes the in-flight message.</p></div>
+      <div class="card"><h3>Honest audit</h3><p><code>nestlaravel production:check</code> reports PASS / WARN / FAIL for the effective configuration. It never says &ldquo;production ready&rdquo;.</p></div>
+    </div>
+    <p style="margin-top:16px"><a class="btn btn-ghost" href="/docs/reliability.html">Guarantees &amp; tests &rarr;</a> &nbsp; <a href="/docs/reference-app.html">Reference checkout saga</a> &middot; <a href="/docs/failure-scenarios.html">Failure scenarios</a> &middot; <a href="/docs/benchmarks.html">Measured overhead</a></p>
   </div>
 </section>
 
@@ -343,13 +360,17 @@ KAFKA_SECURITY_PROTOCOL=plaintext</code></pre></div></div>
         <tr><td><code>npx nestlaravel create my-project</code></td><td>New workspace with gateway, Kafka kit, secrets and validation</td></tr>
         <tr><td><code>npx nestlaravel generate service users</code></td><td>New Laravel microservice wired into gateway, Nx and Docker</td></tr>
         <tr><td><code>npx nestlaravel generate kafka-topic|kafka-event</code></td><td>Register a topic / create a domain event (and consumer)</td></tr>
+        <tr><td><code>npx nestlaravel generate event order.created --service orders --version 1</code></td><td>Schema-governed event, registered for validation (a new version is a new class)</td></tr>
+        <tr><td><code>npx nestlaravel production:check</code></td><td>PASS / WARN / FAIL audit of the effective configuration (exit 1 on FAIL)</td></tr>
+        <tr><td><code>npx nestlaravel outbox:status</code> / <code>dlq:list</code> / <code>kafka:health</code></td><td>Outbox backlog and failed rows, dead letters, broker reachability</td></tr>
+        <tr><td><code>npx nestlaravel events:list</code> / <code>events:check</code> / <code>tenant:check</code></td><td>Registered events, schema compatibility gate, tenant-isolation audit</td></tr>
         <tr><td><code>npx nestlaravel dev</code></td><td>Start infrastructure and serve all apps</td></tr>
         <tr><td><code>npx nestlaravel test</code> / <code>lint</code></td><td>Run every app's tests / style checks via Nx</td></tr>
         <tr><td><code>npx nestlaravel build</code></td><td>Build production Docker images</td></tr>
         <tr><td><code>npx nestlaravel update</code></td><td>Safe, backed-up upgrade (<code>--dry-run</code> first)</td></tr>
         <tr><td><code>npx nestlaravel add tenancy</code></td><td>Install the optional multi-tenancy package</td></tr>
         <tr><td><em>Web / desktop / mobile apps</em></td><td>Created with the stack's own tool, then connected to the gateway &mdash; <a href="/docs/frontend.html">step-by-step guide</a> (no generator needed)</td></tr>
-        <tr><td><code>npx nestlaravel doctor</code></td><td>Check Node, PHP, Composer, Docker</td></tr>
+        <tr><td><code>npx nestlaravel doctor</code></td><td>Check Node, PHP, Composer, Docker and your workspace's apps</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -403,7 +424,7 @@ flutter run --dart-define=API_URL=http://10.0.2.2:8000/api</code></pre></div>
       <div class="card"><h3>Docker</h3><p>One production image per Laravel app, with <code>ext-rdkafka</code>, run as web, worker, outbox publisher or consumer.</p></div>
       <div class="card"><h3>Linux / VPS</h3><p>Supervisor programs and nginx; firewall services to the gateway host.</p></div>
       <div class="card"><h3>CI/CD</h3><p>GitHub Actions templates for tests, audits and image builds.</p></div>
-      <div class="card"><h3>Kubernetes (optional)</h3><p>Not required. Guidance for Deployments, probes and network policies is in the deployment guide.</p></div>
+      <div class="card"><h3>Kubernetes (optional)</h3><p>Not required. Reference manifests (probes, PodDisruptionBudgets, graceful shutdown) are schema-checked in CI but not deployed to a cluster; adapt them to yours.</p></div>
     </div>
     <p style="margin-top:16px"><a href="/docs/deployment.html">Deployment guide &rarr;</a></p>
   </div>

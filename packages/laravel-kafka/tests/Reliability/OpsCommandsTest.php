@@ -123,6 +123,18 @@ class OpsCommandsTest extends ReliabilityTestCase
         $this->assertNotEmpty(array_filter($report['findings'], fn ($f) => $f['id'] === 'backups'), 'later sections still reported');
     }
 
+    public function test_production_check_warns_when_metrics_live_in_a_sql_or_file_cache(): void
+    {
+        config(['cache.default' => 'database', 'cache.stores.database.driver' => 'database', 'kafka.metrics.store' => null]);
+        $byId = array_column($this->runJson('nestlaravel:check')['findings'], null, 'id');
+        $this->assertSame('warn', $byId['metrics']['status']);
+        $this->assertStringContainsString('SQL query', $byId['metrics']['message']);
+
+        config(['cache.stores.redis-metrics' => ['driver' => 'redis'], 'kafka.metrics.store' => 'redis-metrics']);
+        $byId = array_column($this->runJson('nestlaravel:check')['findings'], null, 'id');
+        $this->assertSame('pass', $byId['metrics']['status']);
+    }
+
     public function test_production_check_passes_a_hardened_configuration_but_still_reports_warnings(): void
     {
         config([

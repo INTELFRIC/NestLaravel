@@ -51,7 +51,11 @@ npx nestlaravel dev
 Read next: [INSTALLATION.md](INSTALLATION.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [CLI.md](CLI.md) ·
 [MICROSERVICES.md](MICROSERVICES.md) · [FRONTEND.md](FRONTEND.md) · [KAFKA.md](KAFKA.md) · [SECURITY.md](SECURITY.md) ·
 [DEPLOYMENT.md](DEPLOYMENT.md) · [UPGRADING.md](UPGRADING.md) · [MULTI-TENANCY.md](MULTI-TENANCY.md) ·
-[CONTRIBUTING.md](CONTRIBUTING.md) · [CHANGELOG.md](CHANGELOG.md)
+[RELIABILITY.md](RELIABILITY.md) · [OPERATIONS.md](OPERATIONS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [CHANGELOG.md](CHANGELOG.md)
+
+Reliability & operations (1.1): [guarantees ↔ tests](RELIABILITY.md) · [audit 1.0→1.1](RELIABILITY-AUDIT.md) · [sagas](SAGA.md) ·
+[observability](OBSERVABILITY.md) · [failure scenarios](FAILURE-SCENARIOS.md) · [disaster recovery](DISASTER-RECOVERY.md) ·
+[reference app](REFERENCE-APP.md) · [benchmarks](BENCHMARKS.md)
 
 ## Requirements
 

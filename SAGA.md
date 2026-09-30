@@ -98,7 +98,7 @@ Run `php artisan saga:recover` every minute (scheduler). It handles **timeouts**
 | Instances and their history (every transition is recorded) | table `saga_instances`, column `history` |
 | Stuck in `waiting` past `deadline_at` | `php artisan saga:recover` handles it; alert if `saga_instances` has `waiting` rows older than expected |
 | Needs a human | `status = 'failed'` |
-| Counters | `nestlaravel_saga_total{saga, result=started|completed|compensated|timed_out|failed}` |
+| Counters | `nestlaravel_saga_total{saga, result=started, completed, compensated, timed_out or failed}` |
 
 Correlation: the saga's `correlation_id` is put in every log line of the step and is inherited as `causation`/`correlation`
 by events the step publishes, so one order can be followed across services in logs and traces.

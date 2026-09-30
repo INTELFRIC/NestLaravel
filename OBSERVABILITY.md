@@ -33,11 +33,19 @@ production so all PHP-FPM workers and daemons aggregate; with `file`/`array` eac
 |------|---------|
 | HTTP (RED) | `nestlaravel_http_requests_total`, `nestlaravel_http_request_duration_seconds`, `nestlaravel_http_errors_total` |
 | Kafka consumer | `nestlaravel_kafka_consumed_total{result}`, `nestlaravel_kafka_processing_seconds`, `nestlaravel_kafka_retries_total`, `nestlaravel_kafka_dlq_total`, `nestlaravel_kafka_consumer_errors_total`, `nestlaravel_kafka_commit_failures_total` |
-| Inbox | `nestlaravel_inbox_total{result=processed|duplicate}` |
+| Inbox | `nestlaravel_inbox_total{result=processed or duplicate}` |
 | Outbox | `nestlaravel_outbox_published_total`, `_retries_total`, `_failed_total`, `_recovered_total`, `_lost_claims_total`; gauges `nestlaravel_outbox_pending`, `_processing`, `_failed`, `_oldest_pending_age_seconds`; `nestlaravel_events_produced_total` |
 | Upstream calls | `nestlaravel_upstream_requests_total`, `nestlaravel_upstream_seconds`, `nestlaravel_upstream_retries_total`, `nestlaravel_circuit_rejected_total`, `nestlaravel_circuit_transitions_total` |
 | Saga | `nestlaravel_saga_total{saga,result}` |
-| Platform | `nestlaravel_database_up`, `nestlaravel_db_query_duration_seconds`, `nestlaravel_queue_depth`, `nestlaravel_jobs_total`, `nestlaravel_cache_errors_total`, `nestlaravel_process_memory_bytes`, `nestlaravel_process_memory_peak_bytes`, `nestlaravel_host_load` |
+| Platform | `nestlaravel_database_up`, `nestlaravel_db_query_duration_seconds` (opt-in), `nestlaravel_queue_depth`, `nestlaravel_jobs_total`, `nestlaravel_cache_errors_total`, `nestlaravel_process_memory_bytes`, `nestlaravel_process_memory_peak_bytes`, `nestlaravel_host_load` |
+
+**Where the numbers live matters.** Metrics are kept in a Laravel cache store (`METRICS_CACHE_STORE`, default: the app's default
+store). Laravel's default store is `database`, where **every metric write is a SQL query**; `file` is a file write; `array` is lost at
+the end of each request. Use Redis (`METRICS_CACHE_STORE=redis`) in production; `nestlaravel production:check` warns otherwise.
+A histogram observation costs 3 cache writes, a counter 1. Two consequences of this design, both found and fixed after a clean-install
+test failed: metric writes are re-entrancy guarded (they can never measure themselves), and counters work on the database store
+(which, unlike Redis/array, does not create a key on `increment`). `nestlaravel_db_query_duration_seconds` is **opt-in**
+(`METRICS_DB_QUERIES=true`): one observation per SQL query is measurable overhead.
 
 Metrics never contain per-request ids, user ids or tenant ids as labels (cardinality); those belong in logs and traces.
 Metrics are best-effort: a failing cache never fails a request or a message (it increments `nestlaravel_cache_errors_total` where it can).

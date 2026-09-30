@@ -190,6 +190,8 @@ return [
         'store' => env('METRICS_CACHE_STORE'),
         // Bearer token required for GET /metrics. Empty = endpoint disabled (fail closed).
         'token' => env('METRICS_TOKEN'),
+        // One histogram observation per SQL query (nestlaravel_db_query_duration_seconds). Off by default: measurable overhead.
+        'db_queries' => (bool) env('METRICS_DB_QUERIES', false),
     ],
 
     'otel' => [

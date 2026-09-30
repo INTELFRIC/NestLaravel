@@ -179,3 +179,15 @@ test('migration 1.1.0: patches compose once, adds METRICS_TOKEN once, only warns
   assert.match(second[0], /Review runtime switches/);
   assert.equal(readFileSync(join(root, 'docker-compose.yml'), 'utf8').split('stop_grace_period').length - 1, 1);
 });
+
+test('ops commands forward positional arguments and options to artisan, keeping --service for ourselves', async () => {
+  const { splitArgs } = await import('../src/commands/ops.js');
+  assert.deepEqual(splitArgs(['orders.events', '--service', 'orders', '--limit', '5', '--json']), {
+    service: 'orders',
+    help: false,
+    passthrough: ['orders.events', '--limit=5', '--json'],
+  });
+  assert.deepEqual(splitArgs(['--failed', '--requeue']).passthrough, ['--failed', '--requeue']);
+  assert.equal(splitArgs(['--help']).help, true);
+  assert.deepEqual(splitArgs(['--', '--raw']).passthrough, ['--raw']);
+});

@@ -79,6 +79,19 @@ try {
     'apps/users-service/project.json',
   ]) assert(existsSync(join(app, f)), `generated: ${f}`);
 
+  // 3b. 1.1 reliability tooling, from the packed artefact -----------------------------------------------------------
+  sh('npm', [...cli, 'generate', 'event', 'order.paid', '--service', 'orders', '--version', '1'], { cwd: app });
+  const paidFile = join(app, 'apps/orders-service/app/Modules/Orders/Domain/Events/OrderPaid.php');
+  assert(existsSync(paidFile), 'generated: schema-governed OrderPaid event');
+  sh('php', ['-l', paidFile], { cwd: app });
+  assert(readFileSync(join(app, 'apps/orders-service/config/kafka.php'), 'utf8').includes('OrderPaid::class'), 'event registered in config/kafka.php');
+  const listed = sh('npm', [...cli, 'events:list', '--service', 'orders', '--json'], { cwd: app, capture: true });
+  assert(listed.stdout.includes('order.paid'), '`events:list` sees the generated event');
+  const check = sh('npm', [...cli, 'production:check', '--json'], { cwd: app, capture: true, allowFail: true });
+  const report = JSON.parse(check.stdout);
+  assert(['api', 'orders-service', 'users-service'].every((a) => report.sections.some((s) => s.app === a)), '`production:check` audits every app');
+  assert(['NOT READY', 'READY WITH WARNINGS', 'NO FINDINGS'].includes(report.result) && !/production ready/i.test(check.stdout), '`production:check` reports findings, never claims "production ready"');
+
   const gateway = readFileSync(join(app, 'apps/api/config/gateway.php'), 'utf8');
   assert(gateway.includes("'orders' =>") && gateway.includes('ORDERS_SERVICE_SECRET'), 'gateway registers orders with a signing secret');
   const apiEnv = readFileSync(join(app, 'apps/api/.env'), 'utf8');

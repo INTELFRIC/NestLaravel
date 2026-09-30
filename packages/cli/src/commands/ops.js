@@ -37,19 +37,26 @@ export function selectApps(root, service) {
 
 const hasVendor = (app) => existsSync(join(app.dir, 'vendor', 'autoload.php'));
 
+/** Split argv into our own flags (--service, --help) and the arguments to hand to artisan unchanged. */
+export function splitArgs(argv) {
+  const { positionals, flags, rest } = parseArgs(argv, { boolean: ['json', 'failed', 'requeue', 'help'] });
+  const passthrough = [...positionals];
+  for (const [k, v] of Object.entries(flags)) {
+    if (k === 'service' || k === 'help') continue;
+    passthrough.push(v === false ? `--no-${k}` : v === true ? `--${k}` : `--${k}=${v}`);
+  }
+  passthrough.push(...rest);
+  return { service: flags.service, help: Boolean(flags.help), passthrough };
+}
+
 export async function forward(command, argv) {
-  const { flags, rest } = parseArgs(argv, { boolean: ['json', 'failed', 'requeue', 'help'] });
+  const { service, help, passthrough } = splitArgs(argv);
   const root = requireWorkspace();
-  if (flags.help) {
+  if (help) {
     console.log(`Usage: nestlaravel ${command} [--service <name>] [options]\n\n  ${OPS_COMMANDS[command]}\n\nRuns "php artisan ${command}" in one app (--service) or in every app. Other options are passed through.`);
     return 0;
   }
-  const apps = selectApps(root, flags.service);
-  const passthrough = [...rest];
-  for (const [k, v] of Object.entries(flags)) {
-    if (k === 'service' || k === 'help') continue;
-    passthrough.push(v === true ? `--${k}` : `--${k}=${v}`);
-  }
+  const apps = selectApps(root, service);
 
   let worst = 0;
   for (const app of apps) {

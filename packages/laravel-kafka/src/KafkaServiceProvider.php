@@ -197,7 +197,9 @@ final class KafkaServiceProvider extends ServiceProvider
             return;
         }
 
-        if (config('kafka.metrics.db_queries', true)) {
+        // Opt-in: one histogram observation per SQL query is measurable overhead, and on the database cache store the
+        // metric writes are queries themselves (Metrics guards against the recursion; the cost remains).
+        if (config('kafka.metrics.db_queries', false)) {
             $this->app['db']->listen(static function ($query): void {
                 Metrics::observe('nestlaravel_db_query_duration_seconds', $query->time / 1000, ['connection' => $query->connectionName], 'Database query duration');
             });

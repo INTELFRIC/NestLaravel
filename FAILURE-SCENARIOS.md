@@ -54,9 +54,9 @@ request ─▶ DB error ─▶ 500/503 (no partial writes: event + data commit t
 
 * Statement timeout (`DB_STATEMENT_TIMEOUT_MS`) prevents one slow query holding a worker forever 🔧.
 * Deadlocks: `Transactions::idempotent()` retries a DB-only body; `Transactions::once()` never re-runs bodies with
-  external effects ✅ `TransactionsTest`.
+  external effects ✅ `DegradedModeTest`.
 * ✅ `ChaosScenariosTest::test_database_outage_during_handling_retries_then_recovers_on_redelivery`,
-  `HealthTest::test_readiness_reports_a_down_database`.
+  `OpsEndpointsTest::test_readiness_reports_a_down_database`.
 * After recovery, replay dead letters (fix cause → re-publish original payload); the inbox makes it safe.
 
 ## 5. Redis down

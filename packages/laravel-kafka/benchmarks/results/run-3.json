@@ -2,99 +2,99 @@
     "php": "8.4.12",
     "os": "Windows",
     "sqlite": "3.49.2",
-    "date": "2026-09-30T14:30:19+00:00",
+    "date": "2026-09-30T14:49:01+00:00",
     "results": {
         "consumer.cache_idempotency": {
-            "ops_per_sec": 4922.7,
-            "us_per_op": 203.14,
+            "ops_per_sec": 5890.4,
+            "us_per_op": 169.77,
             "n": 2000
         },
         "consumer.transactional_inbox": {
-            "ops_per_sec": 4317.2,
-            "us_per_op": 231.63,
+            "ops_per_sec": 5436.9,
+            "us_per_op": 183.93,
             "n": 2000
         },
         "consumer.inbox_overhead_us_per_msg": {
-            "value": 28.49
+            "value": 14.16
         },
         "consumer.inbox_duplicate_skipped_no_log_io": {
-            "ops_per_sec": 2398.3,
-            "us_per_op": 416.97,
+            "ops_per_sec": 2969,
+            "us_per_op": 336.82,
             "n": 2000
         },
         "log.info_call_null_channel": {
-            "ops_per_sec": 37273.1,
-            "us_per_op": 26.83,
+            "ops_per_sec": 44887.1,
+            "us_per_op": 22.28,
             "n": 2000
         },
         "consumer.inbox_duplicate_skipped_with_file_log": {
-            "ops_per_sec": 1454.9,
-            "us_per_op": 687.33,
+            "ops_per_sec": 1564.7,
+            "us_per_op": 639.1,
             "n": 500
         },
         "schema.validate_payload_isolated": {
-            "ops_per_sec": 9662.8,
-            "us_per_op": 103.49,
+            "ops_per_sec": 9783.5,
+            "us_per_op": 102.21,
             "n": 20000
         },
         "publish.without_schema": {
-            "ops_per_sec": 2267,
-            "us_per_op": 441.11,
+            "ops_per_sec": 2603.2,
+            "us_per_op": 384.14,
             "n": 2000
         },
         "publish.with_schema_validation": {
-            "ops_per_sec": 1618.4,
-            "us_per_op": 617.88,
+            "ops_per_sec": 1908.3,
+            "us_per_op": 524.01,
             "n": 2000
         },
         "publish.schema_validation_overhead_us_per_event": {
-            "value": 176.77
+            "value": 139.87
         },
         "outbox.drain_rows_per_sec_batch_100": {
-            "value": 1680.8,
+            "value": 2074.1,
             "rows": 2000
         },
         "outbox.drain_rows_per_sec_batch_500": {
-            "value": 1730,
+            "value": 2086.9,
             "rows": 2000
         },
         "obs.metrics_inc": {
-            "ops_per_sec": 29604.6,
-            "us_per_op": 33.78,
+            "ops_per_sec": 26924.6,
+            "us_per_op": 37.14,
             "n": 20000
         },
         "obs.metrics_inc_disabled": {
-            "ops_per_sec": 326108.9,
-            "us_per_op": 3.07,
+            "ops_per_sec": 321022.6,
+            "us_per_op": 3.12,
             "n": 20000
         },
         "obs.redact_context": {
-            "ops_per_sec": 220125.4,
-            "us_per_op": 4.54,
+            "ops_per_sec": 189180.6,
+            "us_per_op": 5.29,
             "n": 20000
         },
         "obs.json_log_line": {
-            "ops_per_sec": 167876.4,
-            "us_per_op": 5.96,
+            "ops_per_sec": 156429,
+            "us_per_op": 6.39,
             "n": 20000
         },
         "obs.traceparent_continue_and_child": {
-            "ops_per_sec": 533422.9,
-            "us_per_op": 1.87,
+            "ops_per_sec": 536539.7,
+            "us_per_op": 1.86,
             "n": 20000
         },
         "http.handler_only": {
-            "ops_per_sec": 43892.5,
-            "us_per_op": 22.78,
+            "ops_per_sec": 42867.6,
+            "us_per_op": 23.33,
             "n": 5000
         },
         "http.handler_with_observe_middleware": {
-            "ops_per_sec": 6649.7,
-            "us_per_op": 150.38,
+            "ops_per_sec": 6449.2,
+            "us_per_op": 155.06,
             "n": 5000
         },
         "http.observability_overhead_us_per_request": {
-            "value": 127.6
+            "value": 131.73
         }
     }
 }
