@@ -119,10 +119,9 @@ jobs:
             composer install --working-dir="$dir" --no-interaction --no-scripts --no-progress >/dev/null
             composer audit --working-dir="$dir"
           done
-      - name: Secret scan (working tree)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Secret scan (working tree + history)
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --redact --verbose
 
   docker:
     name: Docker images build + compose config

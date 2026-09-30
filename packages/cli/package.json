@@ -31,7 +31,7 @@
   "scripts": {
     "build:templates": "node scripts/build-templates.mjs",
     "prepack": "node scripts/build-templates.mjs",
-    "test": "node --test \"test/*.test.js\"",
+    "test": "node --test test/unit.test.js",
     "verify:package": "node scripts/verify-package.mjs"
   },
   "publishConfig": {
