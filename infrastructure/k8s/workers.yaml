@@ -1,0 +1,79 @@
+# Background processes of ONE service: outbox publisher, Kafka consumer, queue worker, saga recovery.
+# Same image as the web pods (infrastructure/docker/laravel.Dockerfile); only the command differs.
+#
+# Graceful shutdown: on SIGTERM each of these finishes the CURRENT unit of work, commits/acks, closes DB/Redis/Kafka
+# connections and exits 0 — so terminationGracePeriodSeconds only needs to exceed one message/batch.
+#
+# Scaling rules
+#   outbox publisher : 1 replica is the simple choice (strict per-aggregate ordering). >1 is SAFE (rows are claimed,
+#                      never double-published) but may reorder events of one aggregate.
+#   kafka consumer   : replicas ≤ topic partitions, same consumer group; scale on consumer lag (KEDA) not CPU.
+#   queue worker     : scale on queue depth.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: orders-service-outbox, labels: { app.kubernetes.io/name: orders-service-outbox } }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app.kubernetes.io/name: orders-service-outbox } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: orders-service-outbox } }
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: outbox
+          image: ghcr.io/REPLACE_ME/orders-service:1.0.0
+          command: ["php", "artisan", "messaging:outbox-publish", "--daemon"]
+          envFrom: [{ configMapRef: { name: orders-service-config } }, { secretRef: { name: orders-service-secrets } }]
+          resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 256Mi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: orders-service-consumer, labels: { app.kubernetes.io/name: orders-service-consumer } }
+spec:
+  replicas: 2                                  # ≤ number of partitions of the consumed topic
+  selector: { matchLabels: { app.kubernetes.io/name: orders-service-consumer } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: orders-service-consumer } }
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: consumer
+          image: ghcr.io/REPLACE_ME/orders-service:1.0.0
+          # --max-runtime/--memory make the process exit cleanly now and then (leak protection); Kubernetes restarts it.
+          command: ["php", "artisan", "kafka:consume", "payments.events", "App\\Modules\\Orders\\Infrastructure\\Messaging\\PaymentCompletedHandler", "--max-runtime=3600", "--memory=200"]
+          envFrom: [{ configMapRef: { name: orders-service-config } }, { secretRef: { name: orders-service-secrets } }]
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 320Mi } }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: orders-service-maintenance }
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: maintenance
+              image: ghcr.io/REPLACE_ME/orders-service:1.0.0
+              command: ["sh", "-c", "php artisan saga:recover && (test \"$(date +%M)\" != \"00\" || php artisan inbox:prune)"]
+              envFrom: [{ configMapRef: { name: orders-service-config } }, { secretRef: { name: orders-service-secrets } }]
+---
+# Migrations run as a Job (or a Helm pre-upgrade hook) BEFORE the new pods take traffic.
+apiVersion: batch/v1
+kind: Job
+metadata: { name: orders-service-migrate }
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/REPLACE_ME/orders-service:1.0.0
+          command: ["php", "artisan", "migrate", "--force"]
+          envFrom: [{ configMapRef: { name: orders-service-config } }, { secretRef: { name: orders-service-secrets } }]

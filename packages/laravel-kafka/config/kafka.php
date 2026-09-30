@@ -74,6 +74,12 @@ return [
         'auto_offset_reset' => env('KAFKA_AUTO_OFFSET_RESET', 'earliest'),
         'session_timeout_ms' => (int) env('KAFKA_SESSION_TIMEOUT_MS', 45000),
         'max_poll_interval_ms' => (int) env('KAFKA_MAX_POLL_INTERVAL_MS', 300000),
+        // Transient client errors are retried with exponential backoff (base → 30 s). Exit after N in a row
+        // (0 = never give up) so the orchestrator restarts the process and alerts on crash loops.
+        'max_consecutive_errors' => (int) env('KAFKA_CONSUMER_MAX_CONSECUTIVE_ERRORS', 0),
+        'error_backoff_ms' => (int) env('KAFKA_CONSUMER_ERROR_BACKOFF_MS', 500),
+        // Close DB/Redis connections when the consumer exits (disable only in tests using in-memory SQLite).
+        'close_connections_on_exit' => (bool) env('KAFKA_CONSUMER_CLOSE_CONNECTIONS', true),
     ],
 
     /*

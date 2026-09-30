@@ -153,7 +153,18 @@ final class KafkaServiceProvider extends ServiceProvider
             $this->publishes([__DIR__.'/../config/kafka.php' => config_path('kafka.php')], 'nestlaravel-kafka-config');
 
             if (config('kafka.register.commands', true)) {
-                $this->commands([OutboxPublishCommand::class, KafkaConsumeCommand::class, SagaRecoverCommand::class]);
+                $this->commands([
+                    OutboxPublishCommand::class,
+                    KafkaConsumeCommand::class,
+                    SagaRecoverCommand::class,
+                    Console\ProductionCheckCommand::class,
+                    Console\OutboxStatusCommand::class,
+                    Console\KafkaHealthCommand::class,
+                    Console\EventsListCommand::class,
+                    Console\EventsCheckCommand::class,
+                    Console\InboxPruneCommand::class,
+                    Console\DlqListCommand::class,
+                ]);
             }
         }
     }

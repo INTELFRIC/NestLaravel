@@ -1,0 +1,101 @@
+# Reference Kubernetes manifests for ONE NestLaravel Laravel service (copy per service, replace "orders").
+# Not required by NestLaravel — Docker Compose / VPS deployments are equally supported (DEPLOYMENT.md).
+# Validate before applying:  kubectl apply --dry-run=server -f infrastructure/k8s/service.yaml
+#
+# Design points (see OPERATIONS.md):
+#   • liveness  → /liveness  : touches nothing external; a Kafka/Redis/DB outage must never restart healthy pods
+#   • readiness → /readiness : fails only for dependencies in HEALTH_REQUIRED (default: database)
+#   • startup   → /startup   : gives slow boots (migrations, cold caches) time before liveness applies
+#   • SIGTERM   → php-fpm/nginx finish in-flight requests; workers/consumers finish the current message and commit
+#   • terminationGracePeriodSeconds > your longest request / message handling time
+#   • services are ClusterIP only, reachable from the gateway only (NetworkPolicy) — never exposed publicly
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-service
+  labels: { app.kubernetes.io/name: orders-service, app.kubernetes.io/part-of: nestlaravel }
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  selector:
+    matchLabels: { app.kubernetes.io/name: orders-service }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: orders-service, app.kubernetes.io/part-of: nestlaravel }
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext: { seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: web
+          image: ghcr.io/REPLACE_ME/orders-service:1.0.0     # immutable tag, never :latest
+          imagePullPolicy: IfNotPresent
+          ports: [{ name: http, containerPort: 80 }]
+          envFrom:
+            - configMapRef: { name: orders-service-config }
+            - secretRef: { name: orders-service-secrets }   # APP_KEY, INTERNAL_SERVICE_SECRET, DB_PASSWORD, METRICS_TOKEN …
+          resources:
+            requests: { cpu: 200m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          startupProbe:
+            httpGet: { path: /startup, port: http }
+            periodSeconds: 5
+            failureThreshold: 30            # up to 150 s to boot
+          livenessProbe:
+            httpGet: { path: /liveness, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /readiness, port: http }
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          lifecycle:
+            preStop:                          # let the endpoint controller remove the pod from Service before nginx stops
+              exec: { command: ["sh", "-c", "sleep 8"] }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"], add: ["CHOWN", "SETUID", "SETGID", "NET_BIND_SERVICE", "DAC_OVERRIDE"] }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: orders-service, labels: { app.kubernetes.io/name: orders-service } }
+spec:
+  type: ClusterIP
+  selector: { app.kubernetes.io/name: orders-service }
+  ports: [{ name: http, port: 80, targetPort: http }]
+---
+# Only the gateway may talk to the service (defence in depth on top of the HMAC signature).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: orders-service-allow-gateway }
+spec:
+  podSelector: { matchLabels: { app.kubernetes.io/name: orders-service } }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app.kubernetes.io/name: gateway } }
+      ports: [{ port: 80 }]
+    - from:                                   # Prometheus scraping /metrics (token-protected)
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: monitoring } }
+      ports: [{ port: 80 }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: orders-service }
+spec:
+  minAvailable: 1
+  selector: { matchLabels: { app.kubernetes.io/name: orders-service } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: orders-service }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: orders-service }
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
