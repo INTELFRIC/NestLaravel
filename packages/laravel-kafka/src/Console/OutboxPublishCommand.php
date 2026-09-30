@@ -14,7 +14,7 @@ class OutboxPublishCommand extends Command
 
     protected $description = 'Publish pending outbox messages to Kafka';
 
-    private bool $shouldStop = false;
+    use HandlesShutdownSignals;
 
     public function handle(OutboxPublisher $publisher): int
     {
@@ -27,14 +27,7 @@ class OutboxPublishCommand extends Command
             return self::SUCCESS;
         }
 
-        if (function_exists('pcntl_async_signals')) {
-            pcntl_async_signals(true);
-            foreach ([SIGTERM, SIGINT] as $signal) {
-                pcntl_signal($signal, function (): void {
-                    $this->shouldStop = true;
-                });
-            }
-        }
+        $this->installSignalHandlers();
 
         $this->info('Outbox publisher running (daemon).');
 

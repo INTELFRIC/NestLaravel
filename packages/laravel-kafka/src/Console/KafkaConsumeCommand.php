@@ -40,7 +40,7 @@ class KafkaConsumeCommand extends Command
 
     protected $description = 'Consume Kafka messages for a topic through the reliability pipeline';
 
-    private bool $shouldStop = false;
+    use HandlesShutdownSignals;
 
     public function handle(KafkaConsumer $consumer, ConsumerPipeline $pipeline): int
     {
@@ -139,20 +139,6 @@ class KafkaConsumeCommand extends Command
         $this->info("Done. Processed {$processed} message(s).");
 
         return $exit;
-    }
-
-    private function installSignalHandlers(): void
-    {
-        if (! function_exists('pcntl_async_signals')) {
-            return;
-        }
-
-        pcntl_async_signals(true);
-        foreach ([SIGTERM, SIGINT] as $signal) {
-            pcntl_signal($signal, function (): void {
-                $this->shouldStop = true;
-            });
-        }
     }
 
     /** Leave the consumer group (commits, triggers a fast rebalance) and release DB/Redis connections. */
