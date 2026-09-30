@@ -57,7 +57,7 @@ for (const f of readdirSync(join(out, 'workspace/docs'))) {
   const p = join(out, 'workspace/docs', f);
   if (f.endsWith('.md')) writeFileSync(p, readFileSync(p, 'utf8').replaceAll('](../', '](framework/'));
 }
-for (const f of ['ARCHITECTURE.md', 'CLI.md', 'KAFKA.md', 'MICROSERVICES.md', 'SECURITY.md', 'DEPLOYMENT.md', 'UPGRADING.md', 'MULTI-TENANCY.md', 'INSTALLATION.md']) {
+for (const f of ['ARCHITECTURE.md', 'CLI.md', 'KAFKA.md', 'MICROSERVICES.md', 'SECURITY.md', 'DEPLOYMENT.md', 'UPGRADING.md', 'MULTI-TENANCY.md', 'INSTALLATION.md', 'FRONTEND.md']) {
   copy(f, `workspace/docs/framework/${f}`);
 }
 copy('packages/laravel-kafka', 'workspace/packages/laravel-kafka', { skip: ['composer.lock', 'tests'] });

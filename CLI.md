@@ -21,6 +21,9 @@ npm i -D nestlaravel                       # or per-project (create adds it for 
 Aliases: `new`=`create`, `g`/`gen`=`generate`, `serve`=`dev`, `upgrade`=`update`.
 Equivalent Nx usage works everywhere: `npx nx test orders-service`, `npx nx serve api`, `npx nx graph`.
 
+> **Web and mobile apps** (Next.js, React, HTML/JS, TypeScript, Flutter, …) have no generator: create them with the
+> framework's own tool and connect them to the gateway — step-by-step in [FRONTEND.md](FRONTEND.md).
+
 ## Examples
 
 ```bash

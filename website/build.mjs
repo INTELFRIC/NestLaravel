@@ -28,6 +28,7 @@ const PAGES = [
   ['Core Concepts', 'Kafka', 'KAFKA.md', 'kafka'],
   ['Core Concepts', 'Multi-tenancy', 'MULTI-TENANCY.md', 'multi-tenancy'],
   ['Development', 'CLI Reference', 'CLI.md', 'cli'],
+  ['Development', 'Web & Mobile Apps', 'FRONTEND.md', 'frontend'],
   ['Development', 'Gateway', 'docs/gateway.md', 'gateway'],
   ['Development', 'Modules', 'docs/modules.md', 'modules'],
   ['Development', 'Dependency Injection', 'docs/dependency-injection.md', 'dependency-injection'],
