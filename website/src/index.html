@@ -28,7 +28,7 @@
     <div>
       <span class="eyebrow">Nx &middot; Laravel &middot; Apache Kafka</span>
       <h1 id="h-hero">Build scalable microservices with <em>NestLaravel</em>.</h1>
-      <p class="lead">NestLaravel brings together Nx, Laravel and Apache Kafka &mdash; organised with a NestJS-style modular architecture &mdash; into a structured development platform for building modular, scalable and event-driven backend systems.</p>
+      <p class="lead">NestLaravel brings together Nx, Laravel and Apache Kafka &mdash; organised with a NestJS-style modular architecture &mdash; into a structured development platform for building modular, scalable and event-driven backend systems &mdash; with web, desktop and mobile front ends on top.</p>
       <div class="cta">
         <a class="btn btn-primary" href="/docs/installation.html">Get Started</a>
         <a class="btn btn-ghost" href="/docs/introduction.html">Read Documentation</a>
@@ -111,6 +111,7 @@ Nx workspace
       <div class="card reveal"><h3>Nx workspace</h3><p>Applications and packages managed from one workspace with cached, affected-only tasks.</p></div>
       <div class="card reveal"><h3>Event driven</h3><p>Connect services with Kafka events using one versioned envelope.</p></div>
       <div class="card reveal"><h3>Laravel backend</h3><p>Use Laravel for business logic and APIs; keep the packages you already know.</p></div>
+      <div class="card reveal"><h3>Any front end</h3><p>Web (Next.js, React, HTML/JS), desktop (Tauri, Electron, Flutter) and mobile (Flutter, React Native, Swift, Kotlin) clients share one gateway API.</p></div>
       <div class="card reveal"><h3>Developer CLI</h3><p>Create projects and services, generate Kafka topics and events, run, test, build and upgrade.</p></div>
       <div class="card reveal"><h3>Standardised architecture</h3><p>Every generated service follows the same conventions, so teams can move between services.</p></div>
       <div class="card reveal"><h3>Built to grow</h3><p>Start with one gateway and add services as the system grows; deploy and scale them independently.</p></div>
@@ -158,6 +159,7 @@ my-project is ready.</code></pre></div>
         <tr><td>Laravel / Nx</td><td>{{laravel}} / {{nx}}</td><td>Installed for you</td></tr>
         <tr><td>Database</td><td>SQLite, PostgreSQL {{postgres}} or MySQL</td><td>SQLite needs no setup</td></tr>
         <tr><td>Apache Kafka</td><td>{{kafka}}</td><td>Bundled dev broker via Docker; <code>php-rdkafka</code> to reach a broker from PHP outside Docker</td></tr>
+        <tr><td>Front-end tooling</td><td>Optional</td><td>Only for the client type you add: Node.js (web), Flutter SDK (mobile/desktop), Rust + platform WebView tools (Tauri)</td></tr>
         <tr><td>Redis</td><td>{{redis}}</td><td>Required for queues/cache in production; optional locally</td></tr>
       </tbody>
     </table></div>
@@ -317,6 +319,7 @@ KAFKA_SECURITY_PROTOCOL=plaintext</code></pre></div></div>
       <li><a class="card" href="/docs/testing.html"><span class="n">08</span><h3>Testing</h3><p>Test services and events.</p></a></li>
       <li><a class="card" href="/docs/deployment.html"><span class="n">09</span><h3>Deployment</h3><p>Deploy to production.</p></a></li>
       <li><a class="card" href="/docs/scaling.html"><span class="n">10</span><h3>Scaling</h3><p>Organise larger systems.</p></a></li>
+      <li><a class="card" href="/docs/frontend.html"><span class="n">11</span><h3>Web, desktop &amp; mobile</h3><p>Connect front-end apps to the gateway.</p></a></li>
     </ol>
   </div>
 </section>
@@ -345,6 +348,7 @@ KAFKA_SECURITY_PROTOCOL=plaintext</code></pre></div></div>
         <tr><td><code>npx nestlaravel build</code></td><td>Build production Docker images</td></tr>
         <tr><td><code>npx nestlaravel update</code></td><td>Safe, backed-up upgrade (<code>--dry-run</code> first)</td></tr>
         <tr><td><code>npx nestlaravel add tenancy</code></td><td>Install the optional multi-tenancy package</td></tr>
+        <tr><td><em>Web / desktop / mobile apps</em></td><td>Created with the stack's own tool, then connected to the gateway &mdash; <a href="/docs/frontend.html">step-by-step guide</a> (no generator needed)</td></tr>
         <tr><td><code>npx nestlaravel doctor</code></td><td>Check Node, PHP, Composer, Docker</td></tr>
       </tbody>
     </table></div>
