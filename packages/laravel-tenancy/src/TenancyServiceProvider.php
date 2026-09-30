@@ -30,7 +30,14 @@ final class TenancyServiceProvider extends ServiceProvider
 
         // Queued jobs remember the tenant that dispatched them...
         Queue::createPayloadUsing(function (): array {
-            $tenant = app(TenantContext::class)->id();
+            $context = app(TenantContext::class);
+            $tenant = $context->id();
+
+            // strict_jobs: a job dispatched with no tenant is a bug (the tenant would be silently lost). Cross-tenant
+            // maintenance jobs must be dispatched inside TenantContext::withoutTenancy().
+            if ($tenant === null && config('tenancy.strict_jobs', false) && ! $context->isBypassed()) {
+                throw new \NestLaravel\Tenancy\Exceptions\TenantNotResolved('Refusing to dispatch a job without a tenant (tenancy.strict_jobs).');
+            }
 
             return $tenant !== null ? ['tenant_id' => $tenant] : [];
         });

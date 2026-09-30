@@ -147,6 +147,7 @@ final class KafkaServiceProvider extends ServiceProvider
         }
 
         $this->registerRuntimeMetrics();
+        $this->registerDatabaseGuards();
 
         if ($this->app->runningInConsole()) {
             $this->publishes([__DIR__.'/../config/kafka.php' => config_path('kafka.php')], 'nestlaravel-kafka-config');
@@ -155,6 +156,27 @@ final class KafkaServiceProvider extends ServiceProvider
                 $this->commands([OutboxPublishCommand::class, KafkaConsumeCommand::class, SagaRecoverCommand::class]);
             }
         }
+    }
+
+    /**
+     * A runaway query must not hold a connection (and a request) forever: apply a per-session statement timeout as
+     * soon as a connection is opened. 0 = leave the database default.
+     */
+    private function registerDatabaseGuards(): void
+    {
+        $ms = (int) config('kafka.database.statement_timeout_ms', 0);
+
+        if ($ms <= 0 || ! class_exists(\Illuminate\Database\Events\ConnectionEstablished::class)) {
+            return;
+        }
+
+        $this->app['events']->listen(\Illuminate\Database\Events\ConnectionEstablished::class, static function ($event) use ($ms): void {
+            match ($event->connection->getDriverName()) {
+                'pgsql' => $event->connection->statement('SET statement_timeout = '.$ms),
+                'mysql', 'mariadb' => $event->connection->statement('SET SESSION max_execution_time = '.$ms),
+                default => null,
+            };
+        });
     }
 
     /** Database query timing and queue job outcomes → metrics (cheap; disable with METRICS_ENABLED=false). */

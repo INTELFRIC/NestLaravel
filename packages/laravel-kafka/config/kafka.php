@@ -238,6 +238,12 @@ return [
         'commands' => true,
     ],
 
+    'database' => [
+        // Per-session statement timeout applied to pgsql/mysql connections (0 = database default). Generated
+        // services set 15000 so a runaway query cannot hold a request or a consumer forever.
+        'statement_timeout_ms' => (int) env('DB_STATEMENT_TIMEOUT_MS', 0),
+    ],
+
     'observability' => [
         // Global middleware: request id, correlation id, trace context, RED metrics.
         'http' => (bool) env('OBSERVABILITY_HTTP', true),

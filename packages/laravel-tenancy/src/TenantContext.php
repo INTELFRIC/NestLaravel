@@ -24,6 +24,13 @@ final class TenantContext
 
         // Lets tenancy-agnostic packages (Kafka kit) stamp events without depending on us.
         app()->instance('tenant_id', $this->tenantId);
+
+        // Every log line written while a tenant is active carries tenant_id (if the observability kit is installed).
+        if (class_exists(\NestLaravel\Kafka\Observability\LogContext::class)) {
+            $this->tenantId !== null
+                ? \NestLaravel\Kafka\Observability\LogContext::set(['tenant_id' => $this->tenantId])
+                : \NestLaravel\Kafka\Observability\LogContext::forget('tenant_id');
+        }
     }
 
     public function id(): ?string
