@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { checkWorkspace } from '../src/doctor.js';
 import { laravelApps, selectApps, verdict, workspaceFindings } from '../src/commands/ops.js';
+import { managedMap } from '../src/managed.js';
 import { generateEvent } from '../src/generators/event.js';
 
 function workspace() {
@@ -190,4 +191,15 @@ test('ops commands forward positional arguments and options to artisan, keeping 
   assert.deepEqual(splitArgs(['--failed', '--requeue']).passthrough, ['--failed', '--requeue']);
   assert.equal(splitArgs(['--help']).help, true);
   assert.deepEqual(splitArgs(['--', '--raw']).passthrough, ['--raw']);
+});
+
+test('managed sync covers every runtime directory of the kafka kit (routes/ops.php was once missed on upgrades)', () => {
+  const tpl = mkdtempSync(join(tmpdir(), 'nl-tpl-kit-'));
+  for (const rel of ['src/A.php', 'config/kafka.php', 'database/migrations/m.php', 'routes/ops.php']) {
+    mkdirSync(join(tpl, 'workspace/packages/laravel-kafka', rel, '..'), { recursive: true });
+    writeFileSync(join(tpl, 'workspace/packages/laravel-kafka', rel), '<?php');
+  }
+  const dests = managedMap(tpl, []).map((m) => m.to);
+  assert.ok(dests.includes('packages/laravel-kafka/routes/ops.php'));
+  assert.ok(dests.includes('packages/laravel-kafka/src/A.php'));
 });

@@ -28,7 +28,7 @@ export function managedMap(tplDir, services) {
   addTree('workspace/apps/api/app/Infrastructure/Gateway', 'apps/api/app/Infrastructure/Gateway');
   addTree('workspace/apps/api/app/Infrastructure/Kafka', 'apps/api/app/Infrastructure/Kafka');
   addTree('workspace/apps/api/app/Messaging', 'apps/api/app/Messaging');
-  for (const dir of ['src', 'config', 'database']) {
+  for (const dir of ['src', 'config', 'database', 'routes']) {
     addTree(`workspace/packages/laravel-kafka/${dir}`, `packages/laravel-kafka/${dir}`);
   }
   addTree('workspace/infrastructure/docker', 'infrastructure/docker');
