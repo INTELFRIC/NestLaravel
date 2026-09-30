@@ -7,7 +7,7 @@ use NestLaravel\Kafka\KafkaProducer;
 use RuntimeException;
 
 /** In-memory producer with switchable failure modes (broker down, delivery failure). */
-final class FakeProducer implements KafkaProducer
+class FakeProducer implements KafkaProducer
 {
     /** @var list<KafkaMessage> produced (not necessarily delivered) */
     public array $produced = [];
