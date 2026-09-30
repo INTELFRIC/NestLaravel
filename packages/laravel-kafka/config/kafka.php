@@ -89,6 +89,9 @@ return [
 
     'schema' => [
         'max_version' => (int) env('KAFKA_EVENT_MAX_VERSION', 1),
+        // true: refuse to publish events without a registered schema / reject consumed events of an unsupported version.
+        'enforce_producer' => (bool) env('KAFKA_SCHEMA_ENFORCE_PRODUCER', false),
+        'enforce_consumer' => (bool) env('KAFKA_SCHEMA_ENFORCE_CONSUMER', false),
     ],
 
     /*
@@ -127,7 +130,83 @@ return [
     'outbox' => [
         'batch_size' => (int) env('KAFKA_OUTBOX_BATCH_SIZE', 100),
         'max_attempts' => (int) env('KAFKA_OUTBOX_MAX_ATTEMPTS', 5),
+        // Backoff = retry_delay_seconds * 2^(attempt-1), capped at max_retry_delay_seconds.
         'retry_delay_seconds' => (int) env('KAFKA_OUTBOX_RETRY_DELAY', 30),
+        'max_retry_delay_seconds' => (int) env('KAFKA_OUTBOX_MAX_RETRY_DELAY', 900),
+        // A row claimed (status=processing) for longer than this is assumed abandoned by a crashed publisher.
+        // Must exceed the worst-case produce+flush time of one batch.
+        'visibility_timeout_seconds' => (int) env('KAFKA_OUTBOX_VISIBILITY_TIMEOUT', 300),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Inbox (transactional idempotency)
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the consumer pipeline runs each handler inside a DB transaction together with an
+    | INSERT into the inbox table (unique consumer + event_id), so a redelivered event can never produce a
+    | second business effect. Requires the inbox migration (php artisan migrate) in the SAME database as
+    | your business tables. retention_days must exceed the longest possible redelivery window.
+    |
+    */
+
+    'inbox' => [
+        'enabled' => (bool) env('KAFKA_INBOX_ENABLED', false),
+        'table' => env('KAFKA_INBOX_TABLE', 'inbox_events'),
+        'retention_days' => (int) env('KAFKA_INBOX_RETENTION_DAYS', 14),
+        // >1 retries the whole handler transaction on deadlock: only safe when the handler has no external side effects.
+        'deadlock_attempts' => (int) env('KAFKA_INBOX_DEADLOCK_ATTEMPTS', 1),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event classes (schemas)
+    |--------------------------------------------------------------------------
+    |
+    | Event classes implementing HasEventSchema. Registered at boot for producer- and consumer-side validation.
+    | `nestlaravel generate event` appends here.
+    |
+    */
+
+    'events' => [
+        // @nestlaravel:events
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Observability
+    |--------------------------------------------------------------------------
+    */
+
+    'metrics' => [
+        'enabled' => (bool) env('METRICS_ENABLED', true),
+        // Cache store shared by all processes of this service (redis in production). null = default store.
+        'store' => env('METRICS_CACHE_STORE'),
+        // Bearer token required for GET /metrics. Empty = endpoint disabled (fail closed).
+        'token' => env('METRICS_TOKEN'),
+    ],
+
+    'otel' => [
+        'enabled' => (bool) env('OTEL_ENABLED', false),
+        'endpoint' => env('OTEL_EXPORTER_OTLP_ENDPOINT'),
+        'headers' => [],
+        'service_name' => env('OTEL_SERVICE_NAME'),
+        'timeout_seconds' => (int) env('OTEL_EXPORTER_TIMEOUT', 2),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Health
+    |--------------------------------------------------------------------------
+    |
+    | Dependencies listed in `required` make /readiness fail when they are down. Liveness never depends on them.
+    | Kafka is NOT required by default: a service that cannot reach the broker may still serve HTTP.
+    |
+    */
+
+    'health' => [
+        'required' => array_values(array_filter(array_map('trim', explode(',', (string) env('HEALTH_REQUIRED', 'database'))))),
+        'timeout_ms' => (int) env('HEALTH_CHECK_TIMEOUT_MS', 1500),
     ],
 
     /*

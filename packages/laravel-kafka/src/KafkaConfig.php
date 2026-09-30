@@ -116,6 +116,52 @@ final class KafkaConfig
         return (string) ($this->config['consumer_pipeline']['log_path'] ?? storage_path('framework/kafka'));
     }
 
+    public function outboxVisibilityTimeoutSeconds(): int
+    {
+        return (int) ($this->config['outbox']['visibility_timeout_seconds'] ?? 300);
+    }
+
+    public function outboxMaxRetryDelaySeconds(): int
+    {
+        return (int) ($this->config['outbox']['max_retry_delay_seconds'] ?? 900);
+    }
+
+    public function inboxEnabled(): bool
+    {
+        return (bool) ($this->config['inbox']['enabled'] ?? false);
+    }
+
+    public function inboxTable(): string
+    {
+        return (string) ($this->config['inbox']['table'] ?? 'inbox_events');
+    }
+
+    public function inboxRetentionDays(): int
+    {
+        return (int) ($this->config['inbox']['retention_days'] ?? 14);
+    }
+
+    public function inboxDeadlockAttempts(): int
+    {
+        return (int) ($this->config['inbox']['deadlock_attempts'] ?? 1);
+    }
+
+    public function enforceProducerSchema(): bool
+    {
+        return (bool) ($this->config['schema']['enforce_producer'] ?? false);
+    }
+
+    public function enforceConsumerSchema(): bool
+    {
+        return (bool) ($this->config['schema']['enforce_consumer'] ?? false);
+    }
+
+    /** @return list<string> */
+    public function eventClasses(): array
+    {
+        return array_values((array) ($this->config['events'] ?? []));
+    }
+
     public function retryBackoffMs(): int
     {
         return max(0, (int) ($this->config['consumer_pipeline']['retry_backoff_ms'] ?? 200));

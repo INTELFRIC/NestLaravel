@@ -4,6 +4,7 @@ namespace NestLaravel\Kafka\Serializers;
 
 use NestLaravel\Kafka\Contracts\DomainEvent;
 use InvalidArgumentException;
+use NestLaravel\Kafka\Exceptions\InvalidEventException;
 use JsonException;
 
 final class JsonEventSerializer
@@ -52,12 +53,27 @@ final class JsonEventSerializer
     {
         foreach (['event_id', 'event_type', 'aggregate_id', 'aggregate_type', 'payload'] as $field) {
             if (! array_key_exists($field, $data)) {
-                throw new InvalidArgumentException("Domain event missing required field [{$field}].");
+                throw new InvalidEventException("Domain event missing required field [{$field}].");
             }
         }
 
         if (! is_array($data['payload'])) {
-            throw new InvalidArgumentException('Domain event payload must be an array.');
+            throw new InvalidEventException('Domain event payload must be an array.');
+        }
+
+        foreach (['event_id', 'event_type'] as $field) {
+            if (! is_string($data[$field]) || trim($data[$field]) === '' || strlen($data[$field]) > 191) {
+                throw new InvalidEventException("Domain event [{$field}] must be a non-empty string (max 191 chars).");
+            }
+        }
+
+        $version = $data['event_version'] ?? $data['version'] ?? 1;
+        if (! is_int($version) || $version < 1) {
+            throw new InvalidEventException('Domain event [event_version] must be a positive integer.');
+        }
+
+        if (isset($data['occurred_at']) && (! is_string($data['occurred_at']) || strtotime($data['occurred_at']) === false)) {
+            throw new InvalidEventException('Domain event [occurred_at] must be a valid timestamp.');
         }
     }
 }
