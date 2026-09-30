@@ -1,0 +1,40 @@
+# Secrets & local state — NEVER commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+auth.json
+
+# Dependencies & build output
+node_modules/
+/apps/*/vendor
+/packages/*/vendor
+/dist
+.nx/cache
+.nx/workspace-data
+.nx/polygraph
+
+# Laravel
+/apps/*/.env
+/apps/*/storage/*.key
+/apps/*/storage/pail
+/apps/*/public/hot
+/apps/*/public/storage
+/apps/*/database/*.sqlite
+/apps/*/.phpunit.cache
+.phpunit.result.cache
+
+# Portals
+/apps/*/.next
+/apps/*/out
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# NestLaravel update backups (may contain config)
+/.nestlaravel/backup

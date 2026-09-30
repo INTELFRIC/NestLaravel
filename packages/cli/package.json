@@ -1,0 +1,50 @@
+{
+  "name": "nestlaravel",
+  "version": "1.0.0",
+  "description": "NestLaravel — the Nx + Laravel microservice framework with Kafka. Create, generate, develop, build and upgrade projects.",
+  "keywords": [
+    "nestlaravel",
+    "nx",
+    "laravel",
+    "microservices",
+    "kafka",
+    "monorepo",
+    "cli",
+    "scaffold"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "nestlaravel": "bin/nestlaravel.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build:templates": "node scripts/build-templates.mjs",
+    "prepack": "node scripts/build-templates.mjs",
+    "test": "node --test \"test/*.test.js\"",
+    "verify:package": "node scripts/verify-package.mjs"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/REPLACE_ME/nestlaravel.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/REPLACE_ME/nestlaravel/issues"
+  },
+  "homepage": "https://nestlaravel.dev"
+}

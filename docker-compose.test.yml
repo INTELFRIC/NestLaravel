@@ -1,0 +1,101 @@
+# Test stack: dedicated Postgres DB + PHPUnit/artisan test.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm app
+#
+# Or rebuild and run:
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm --build app
+
+services:
+  app:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: development
+    image: nest-laravel-app:test
+    container_name: nest-laravel-test-app
+    environment:
+      APP_ENV: testing
+      APP_DEBUG: "true"
+      # Generate one: php -r "echo 'base64:'.base64_encode(random_bytes(32));"
+      APP_KEY: ${APP_KEY:?Set APP_KEY for the test run}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-app}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      QUEUE_CONNECTION: sync
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      MAIL_MAILER: array
+      RUN_MIGRATIONS: "1"
+      SKIP_OPTIMIZE: "1"
+      WAIT_FOR_DB: "1"
+      KAFKA_BROKERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # Kafka is behind profile "kafka" in this overlay; do not block tests
+      kafka:
+        condition: service_healthy
+        required: false
+    # One-shot test runner (overrides supervisord / serve)
+    command:
+      [
+        "sh",
+        "-c",
+        "php artisan migrate --force --no-interaction && php artisan test --ansi",
+      ]
+    volumes:
+      - ./apps/api:/var/www/html
+      - nest_laravel_test_vendor:/var/www/html/vendor
+    ports: []
+    healthcheck:
+      disable: true
+    restart: "no"
+
+  worker:
+    profiles: ["disabled"]
+    command: ["true"]
+
+  scheduler:
+    profiles: ["disabled"]
+    command: ["true"]
+
+  kafka:
+    profiles: ["kafka"]
+    # Opt-in: add --profile kafka if integration tests need brokers
+
+  kafka-ui:
+    profiles: ["kafka"]
+
+  postgres:
+    container_name: nest-laravel-test-postgres
+    environment:
+      POSTGRES_DB: laravel_test
+      POSTGRES_USER: laravel
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "${POSTGRES_TEST_PORT:-5433}:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+
+  redis:
+    container_name: nest-laravel-test-redis
+    ports:
+      - "${REDIS_TEST_PORT:-6380}:6379"
+    volumes:
+      - redis_test_data:/data
+
+volumes:
+  nest_laravel_test_vendor:
+    name: nest-laravel-test-vendor
+  postgres_test_data:
+    name: nest-laravel-postgres-test-data
+  redis_test_data:
+    name: nest-laravel-redis-test-data

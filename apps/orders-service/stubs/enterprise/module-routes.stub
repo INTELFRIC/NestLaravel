@@ -1,0 +1,14 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| {{ module }} Module API Routes
+|--------------------------------------------------------------------------
+|
+| Loaded by {{ module }}ServiceProvider under the api/v1 prefix.
+|
+*/
+
+// Route::get('{{ routePrefix }}', ...);

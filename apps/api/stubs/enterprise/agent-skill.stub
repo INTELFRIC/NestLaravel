@@ -1,0 +1,24 @@
+---
+name: {{ name }}
+description: {{ description }}
+---
+
+# {{ title }}
+
+## When to use
+
+Use this skill when the user asks to work on {{ name }}.
+
+## Instructions
+
+1. Follow `docs/architecture.md` — Domain → Application → Infrastructure → Presentation.
+2. Put business capabilities in `apps/api/app/Modules/{Name}`, never a flat Controllers/Services tree.
+3. Portals talk only to the API gateway (`apps/api`). Never call microservice URLs from the browser.
+4. Generate code with Artisan (`make:module`, `make:action`, `make:dto`) rather than inventing structure.
+
+## Checklist
+
+- [ ] Module provider registered in `bootstrap/providers.php`
+- [ ] Controllers call Actions only
+- [ ] Repository contracts live in Domain; implementations in Infrastructure
+- [ ] Cross-module access uses contracts or events

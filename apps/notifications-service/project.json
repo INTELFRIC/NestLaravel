@@ -1,0 +1,49 @@
+{
+  "name": "notifications-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/notifications-service/app",
+  "tags": [
+    "type:microservice",
+    "stack:laravel",
+    "domain:notifications"
+  ],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan serve --host=127.0.0.1 --port=8003",
+        "cwd": "apps/notifications-service"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan test",
+        "cwd": "apps/notifications-service"
+      }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan migrate",
+        "cwd": "apps/notifications-service"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php vendor/bin/pint --test",
+        "cwd": "apps/notifications-service"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "node infrastructure/scripts/docker-build.mjs apps/notifications-service",
+        "cwd": "."
+      }
+    }
+  }
+}

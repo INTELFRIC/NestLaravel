@@ -1,0 +1,43 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Messaging\Events\AbstractDomainEvent;
+
+final class {{ class }} extends AbstractDomainEvent
+{
+    public function __construct(
+        private readonly string $aggregateId,
+        ?string $eventId = null,
+        ?string $occurredAt = null,
+        ?string $correlationId = null,
+        ?string $causationId = null,
+    ) {
+        parent::__construct($eventId, $occurredAt, $correlationId, $causationId);
+    }
+
+    public function eventType(): string
+    {
+        return '{{ eventType }}';
+    }
+
+    public function aggregateId(): string
+    {
+        return $this->aggregateId;
+    }
+
+    public function aggregateType(): string
+    {
+        return '{{ aggregateType }}';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function payload(): array
+    {
+        return [
+            'id' => $this->aggregateId,
+        ];
+    }
+}

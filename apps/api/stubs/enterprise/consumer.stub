@@ -1,0 +1,32 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Core\Contracts\IdempotencyStore;
+use App\Messaging\Contracts\DomainEvent;
+use Illuminate\Support\Facades\Log;
+
+final class {{ class }}
+{
+    public function __construct(
+        private readonly IdempotencyStore $idempotency,
+    ) {}
+
+    public function handle(DomainEvent $event): void
+    {
+        $key = '{{ eventType }}:'.$event->eventId();
+
+        if ($this->idempotency->has($key)) {
+            return;
+        }
+
+        // Handle the integration / domain event for the {{ module }} module.
+        Log::info('{{ class }} processed', [
+            'event_id' => $event->eventId(),
+            'event_type' => $event->eventType(),
+            'aggregate_id' => $event->aggregateId(),
+        ]);
+
+        $this->idempotency->remember($key);
+    }
+}

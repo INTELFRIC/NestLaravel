@@ -1,0 +1,106 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(14, 116, 144, 0.14), transparent 40%),
+    linear-gradient(180deg, #f4f7f5 0%, #e7eee9 100%);
+  color: #14231c;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.card {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 0.9rem;
+  padding: 2rem;
+  border: 1px solid rgba(20, 35, 28, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 40px rgba(20, 35, 28, 0.08);
+}
+
+.admin {
+  background: #12171c;
+  color: #edf2f7;
+  border-color: rgba(237, 242, 247, 0.12);
+}
+
+.admin .copy,
+.admin .meta,
+.admin .label {
+  color: rgba(237, 242, 247, 0.78);
+}
+
+.admin .input {
+  background: #1b222a;
+  color: #edf2f7;
+  border-color: rgba(237, 242, 247, 0.18);
+}
+
+.admin .button {
+  background: #d97706;
+  color: #111827;
+}
+
+.eyebrow {
+  margin: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-family: "Segoe UI", sans-serif;
+  opacity: 0.7;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.copy,
+.meta {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.label {
+  display: grid;
+  gap: 0.35rem;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.85rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(20, 35, 28, 0.18);
+  background: #fff;
+  font: inherit;
+}
+
+.button {
+  margin-top: 0.4rem;
+  padding: 0.85rem 1rem;
+  border: 0;
+  background: #0f766e;
+  color: #fff;
+  font-family: "Segoe UI", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.error {
+  margin: 0;
+  color: #b91c1c;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+}

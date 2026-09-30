@@ -1,0 +1,55 @@
+{
+  "name": "api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/api/app",
+  "tags": [
+    "type:api",
+    "stack:laravel"
+  ],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan serve --host=127.0.0.1 --port=8000",
+        "cwd": "apps/api"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan test",
+        "cwd": "apps/api"
+      }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan migrate",
+        "cwd": "apps/api"
+      }
+    },
+    "artisan": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan",
+        "cwd": "apps/api"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php vendor/bin/pint --test",
+        "cwd": "apps/api"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "node infrastructure/scripts/docker-build.mjs apps/api",
+        "cwd": "."
+      }
+    }
+  }
+}

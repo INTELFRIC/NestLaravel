@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}}</title>
+  <meta name="description" content="NestLaravel is a developer framework combining Nx, Laravel and Apache Kafka, with a NestJS-style modular architecture, for building modular, scalable and event-driven microservices.">
+  <link rel="canonical" href="{{canonical}}">
+  <meta property="og:type" content="website"><meta property="og:site_name" content="NestLaravel">
+  <meta property="og:title" content="{{title}}">
+  <meta property="og:description" content="Create secure, Kafka-connected Laravel microservices in an Nx workspace with one command: npx nestlaravel create my-project.">
+  <meta property="og:url" content="{{canonical}}">
+  <meta name="twitter:card" content="summary"><meta name="twitter:title" content="{{title}}">
+  <meta name="twitter:description" content="Create secure, Kafka-connected Laravel microservices in an Nx workspace with one command.">
+  <meta name="theme-color" content="#0b1f4b">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/theme.js"></script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"NestLaravel","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, macOS, Linux","author":{"@type":"Person","name":"Dr. Constantino Msigwa"},"publisher":{"@type":"Organization","name":"Intelfric Technology Limited"},"license":"https://opensource.org/licenses/MIT"}</script>
+</head>
+<body>
+{{header}}
+<main id="main">
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="home" aria-labelledby="h-hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Nx &middot; Laravel &middot; Apache Kafka</span>
+      <h1 id="h-hero">Build scalable microservices with <em>NestLaravel</em>.</h1>
+      <p class="lead">NestLaravel brings together Nx, Laravel and Apache Kafka &mdash; organised with a NestJS-style modular architecture &mdash; into a structured development platform for building modular, scalable and event-driven backend systems.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="/docs/installation.html">Get Started</a>
+        <a class="btn btn-ghost" href="/docs/introduction.html">Read Documentation</a>
+      </div>
+      <div class="terminal" role="group" aria-label="Installation command">
+        <div class="term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+        <div class="term-body"><span class="prompt">$ </span><span id="typed" data-text="npx nestlaravel create my-project">npx nestlaravel create my-project</span><span class="caret" aria-hidden="true"></span>
+          <button class="copy" type="button" data-copy="npx nestlaravel create my-project" aria-label="Copy install command">Copy</button></div>
+      </div>
+      <p class="ready"><span aria-hidden="true">&#10003;</span> Ready to build</p>
+    </div>
+    <div class="diagram reveal" aria-label="NestLaravel architecture overview">
+      <svg viewBox="0 0 460 420" role="img" aria-labelledby="dg-t">
+        <title id="dg-t">Nx workspace layer and framework layer feed Laravel microservices (users, orders, payments) which communicate through Kafka</title>
+        <rect class="box" x="30" y="10" width="170" height="52" rx="12"/><text x="115" y="34" text-anchor="middle" font-weight="700">Nx</text><text x="115" y="52" text-anchor="middle" font-size="11" opacity=".7">Workspace layer</text>
+        <rect class="box" x="260" y="10" width="170" height="52" rx="12"/><text x="345" y="34" text-anchor="middle" font-weight="700">NestJS-style</text><text x="345" y="52" text-anchor="middle" font-size="11" opacity=".7">Framework layer</text>
+        <path class="flow" stroke="#0878e8" d="M115 62 V90 H230 V112"/><path class="flow" stroke="#ff6b00" d="M345 62 V90 H230"/>
+        <rect class="box" x="90" y="112" width="280" height="50" rx="12" stroke="#ff6b00"/><text x="230" y="142" text-anchor="middle" font-weight="700">Laravel microservices</text>
+        <path class="flow" stroke="#ff9d00" d="M230 162 V186 M95 186 H365 M95 186 V204 M230 186 V204 M365 186 V204"/>
+        <rect class="box" x="30" y="204" width="130" height="44" rx="10"/><text x="95" y="231" text-anchor="middle">Users</text>
+        <rect class="box" x="165" y="204" width="130" height="44" rx="10"/><text x="230" y="231" text-anchor="middle">Orders</text>
+        <rect class="box" x="300" y="204" width="130" height="44" rx="10"/><text x="365" y="231" text-anchor="middle">Payments</text>
+        <path class="flow" stroke="#00a88f" d="M95 248 V290 M230 248 V290 M365 248 V290"/>
+        <rect class="box" x="30" y="290" width="400" height="48" rx="12" stroke="#00a88f"/><text x="230" y="320" text-anchor="middle" font-weight="700">Apache Kafka</text>
+        <path class="flow" stroke="#00a88f" d="M230 338 V370"/>
+        <text x="230" y="394" text-anchor="middle" font-size="13" opacity=".8">Event-driven system</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STACK ================= -->
+<section id="stack" aria-labelledby="h-stack">
+  <div class="wrap">
+    <h2 class="title" id="h-stack">Built on proven technologies</h2>
+    <p class="sub">NestLaravel does not replace these technologies. It gives you a structured, tested way to combine them.</p>
+    <div class="grid">
+      <div class="card reveal"><div class="badge b-nx" aria-hidden="true">Nx</div><h3>Nx</h3><p>Monorepo and workspace orchestration: project graph, cached and affected builds and tests.</p></div>
+      <div class="card reveal"><div class="badge b-nest" aria-hidden="true">N</div><h3>NestJS-style architecture</h3><p>Module structure and dependency-injected contracts (Domain / Application / Infrastructure / Presentation) behind a single gateway. NestJS itself is not a runtime dependency.</p></div>
+      <div class="card reveal"><div class="badge b-lar" aria-hidden="true">L</div><h3>Laravel</h3><p>The backend microservices and gateway: APIs, business logic, queues and the Laravel ecosystem.</p></div>
+      <div class="card reveal"><div class="badge b-kaf" aria-hidden="true">K</div><h3>Apache Kafka</h3><p>Event-driven communication between services with an outbox, retries and dead-letter topics.</p></div>
+    </div>
+    <div class="equation" aria-label="Nx plus NestJS-style plus Laravel plus Kafka equals NestLaravel"><span class="chip">Nx</span>+<span class="chip">NestJS-style</span>+<span class="chip">Laravel</span>+<span class="chip">Kafka</span>=<span class="chip" style="border-color:var(--orange)">NestLaravel</span></div>
+  </div>
+</section>
+
+<!-- ================= WHAT IS ================= -->
+<section class="alt" id="what" aria-labelledby="h-what">
+  <div class="wrap split">
+    <div>
+      <h2 class="title" id="h-what">What is NestLaravel?</h2>
+      <p class="sub" style="margin-bottom:14px"><strong style="color:var(--text)">NestLaravel is a hybrid microservice development framework.</strong> It combines Nx workspace management and a NestJS-style modular architecture with Laravel-based backend microservices and Kafka-based event communication.</p>
+      <p class="sub">You organise several backend services inside one consistent workspace while each service keeps Laravel's mature ecosystem. A single API gateway is the only public interface; services are internal and trust only signed gateway calls.</p>
+      <p><a href="/docs/architecture.html">Read the architecture &rarr;</a></p>
+    </div>
+    <div class="code reveal" aria-label="Workflow"><pre><code>Developer
+   │
+   ▼
+NestLaravel CLI
+   │
+   ▼
+Nx workspace
+   ├── apps/api              gateway (public)
+   ├── apps/users-service
+   ├── apps/orders-service
+   ├── apps/payments-service
+   └── other Laravel services
+             │
+             ▼
+           Kafka</code></pre></div>
+  </div>
+</section>
+
+<!-- ================= WHY ================= -->
+<section id="why" aria-labelledby="h-why">
+  <div class="wrap">
+    <h2 class="title" id="h-why">Why NestLaravel?</h2>
+    <div class="grid">
+      <div class="card reveal"><h3>Modular microservices</h3><p>Independent Laravel services in a structured workspace, each with its own database and secrets.</p></div>
+      <div class="card reveal"><h3>Nx workspace</h3><p>Applications and packages managed from one workspace with cached, affected-only tasks.</p></div>
+      <div class="card reveal"><h3>Event driven</h3><p>Connect services with Kafka events using one versioned envelope.</p></div>
+      <div class="card reveal"><h3>Laravel backend</h3><p>Use Laravel for business logic and APIs; keep the packages you already know.</p></div>
+      <div class="card reveal"><h3>Developer CLI</h3><p>Create projects and services, generate Kafka topics and events, run, test, build and upgrade.</p></div>
+      <div class="card reveal"><h3>Standardised architecture</h3><p>Every generated service follows the same conventions, so teams can move between services.</p></div>
+      <div class="card reveal"><h3>Built to grow</h3><p>Start with one gateway and add services as the system grows; deploy and scale them independently.</p></div>
+      <div class="card reveal"><h3>Production practices included</h3><p>Docker images, health probes, tests, CI templates, security controls and a documented upgrade path.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUICK START ================= -->
+<section class="alt" id="quickstart" aria-labelledby="h-qs">
+  <div class="wrap split">
+    <div>
+      <h2 class="title" id="h-qs">Start building in minutes</h2>
+      <ol class="steps">
+        <li><strong>Create a project</strong><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel create my-project</code></pre></div></li>
+        <li><strong>Enter the workspace</strong><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>cd my-project</code></pre></div></li>
+        <li><strong>Start development</strong><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel dev</code></pre></div></li>
+      </ol>
+    </div>
+    <div>
+      <h3 style="margin-top:0">What you will see</h3>
+      <div class="code"><pre><code>✓ Workspace files written to my-project/
+✓ .env files created with fresh random secrets
+✓ Dependencies installed (Composer + npm)
+✓ Workspace validated
+
+my-project is ready.</code></pre></div>
+      <p class="sub" style="margin-top:8px">The <code>dev</code> command starts Kafka, PostgreSQL and Redis with Docker when it is available and serves every app through Nx. Output above is what <code>create</code> prints; <a href="/docs/installation.html">see the full installation guide</a>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= REQUIREMENTS ================= -->
+<section id="requirements" aria-labelledby="h-req">
+  <div class="wrap">
+    <h2 class="title" id="h-req">Requirements</h2>
+    <p class="sub">Versions come from the framework's supported runtime matrix (<code>packages/cli/src/versions.js</code>) and are checked by <code>npx nestlaravel doctor</code>.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Tool</th><th>Version</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Node.js</td><td>&ge; {{nodeMin}}</td><td>Tested on {{nodeTested}}</td></tr>
+        <tr><td>npm</td><td>&ge; {{npmMin}}</td><td>Ships with Node.js</td></tr>
+        <tr><td>PHP</td><td>&ge; {{phpMin}}</td><td>Tested on {{phpTested}}; extensions: {{phpExt}}</td></tr>
+        <tr><td>Composer</td><td>&ge; {{composerMin}}</td><td></td></tr>
+        <tr><td>Laravel / Nx</td><td>{{laravel}} / {{nx}}</td><td>Installed for you</td></tr>
+        <tr><td>Database</td><td>SQLite, PostgreSQL {{postgres}} or MySQL</td><td>SQLite needs no setup</td></tr>
+        <tr><td>Apache Kafka</td><td>{{kafka}}</td><td>Bundled dev broker via Docker; <code>php-rdkafka</code> to reach a broker from PHP outside Docker</td></tr>
+        <tr><td>Redis</td><td>{{redis}}</td><td>Required for queues/cache in production; optional locally</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ================= MICROSERVICE ================= -->
+<section class="alt" id="microservice" aria-labelledby="h-ms">
+  <div class="wrap split">
+    <div>
+      <h2 class="title" id="h-ms">Create a microservice</h2>
+      <p class="sub">Generate a standardised Laravel microservice inside the workspace. It is registered with the gateway, Nx and Docker in one step.</p>
+      <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel generate service users</code></pre></div>
+      <ul style="color:var(--muted)">
+        <li>Own <code>.env</code>, <code>APP_KEY</code> and database credentials</li>
+        <li>Gateway route <code>/api/v1/users</code>, protected by signed requests</li>
+        <li>Nx targets: <code>serve</code>, <code>test</code>, <code>lint</code>, <code>migrate</code>, <code>build</code></li>
+      </ul>
+      <p><a href="/docs/microservices.html">Microservices guide &rarr;</a></p>
+    </div>
+    <div class="code"><button class="copy" type="button" aria-label="Copy structure">Copy</button><pre><code>apps/
+└── users-service/
+    ├── app/
+    │   ├── Http/Middleware/VerifyGatewaySignature.php
+    │   └── Modules/Users/{Domain,Application,Infrastructure,Presentation}
+    ├── bootstrap/
+    ├── config/        (kafka.php, internal.php, …)
+    ├── database/
+    ├── routes/
+    ├── tests/
+    ├── .env.example
+    ├── composer.json
+    └── project.json   (Nx targets)</code></pre></div>
+  </div>
+</section>
+
+<!-- ================= KAFKA ================= -->
+<section id="kafka" aria-labelledby="h-kafka">
+  <div class="wrap">
+    <h2 class="title" id="h-kafka">Event-driven microservices</h2>
+    <p class="sub">Services never read each other's databases. They publish events; other services react.</p>
+    <div class="split">
+      <div class="code reveal"><pre><code>Users service
+     │  users.user.created
+     ▼
+  Kafka topic
+     │
+     ├──────────────┐
+     ▼              ▼
+Orders service   Notifications service</code></pre></div>
+      <ul style="color:var(--muted);margin:0">
+        <li><strong style="color:var(--text)">Producers</strong> write events to a transactional outbox; a publisher ships them after broker confirmation.</li>
+        <li><strong style="color:var(--text)">Consumers &amp; groups</strong> run in a consumer group per service; offsets are committed only after success.</li>
+        <li><strong style="color:var(--text)">Topics &amp; events</strong> use one envelope: <code>event_id</code>, <code>event_type</code>, <code>version</code>, <code>source</code>, <code>correlation_id</code>, <code>payload</code>.</li>
+        <li><strong style="color:var(--text)">Retries &amp; dead letters</strong>: exponential backoff, then <code>&lt;topic&gt;.dlq</code>; poison messages skip retries.</li>
+        <li><strong style="color:var(--text)">Versioning</strong>: consumers dead-letter events newer than the schema they support.</li>
+        <li><strong style="color:var(--text)">Correlation IDs</strong> flow from the gateway request into events and logs.</li>
+      </ul>
+    </div>
+    <p style="margin-top:20px"><a class="btn btn-ghost" href="/docs/kafka.html">Learn Kafka Architecture &rarr;</a></p>
+  </div>
+</section>
+
+<!-- ================= CODE ================= -->
+<section class="alt" id="code" aria-labelledby="h-code">
+  <div class="wrap">
+    <h2 class="title" id="h-code">See it in code</h2>
+    <p class="sub">Examples are taken from the framework's generators and documentation.</p>
+    <div data-tabs>
+      <div role="tablist" aria-label="Code examples">
+        <button role="tab" id="t1" aria-selected="true" aria-controls="p1">Create Service</button>
+        <button role="tab" id="t2" aria-selected="false" aria-controls="p2" tabindex="-1">Kafka Producer</button>
+        <button role="tab" id="t3" aria-selected="false" aria-controls="p3" tabindex="-1">Kafka Consumer</button>
+        <button role="tab" id="t4" aria-selected="false" aria-controls="p4" tabindex="-1">API</button>
+        <button role="tab" id="t5" aria-selected="false" aria-controls="p5" tabindex="-1">Configuration</button>
+      </div>
+      <div role="tabpanel" id="p1" aria-labelledby="t1"><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code><span class="tk-c"># service + topic + event (with a consumer handler)</span>
+npx nestlaravel generate service orders
+npx nestlaravel generate kafka-topic order-events --service orders --create
+npx nestlaravel generate kafka-event order.created --service orders --consumer</code></pre></div></div>
+      <div role="tabpanel" id="p2" aria-labelledby="t2" hidden><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code><span class="tk-k">use</span> NestLaravel\Kafka\Contracts\EventBus;
+
+DB::transaction(<span class="tk-k">function</span> () <span class="tk-k">use</span> (<span class="tk-v">$order</span>, <span class="tk-v">$events</span>) {
+    <span class="tk-v">$order</span>-&gt;save();
+    <span class="tk-c">// written to the outbox in the same transaction</span>
+    <span class="tk-v">$events</span>-&gt;publish(<span class="tk-k">new</span> OrderCreated((string) <span class="tk-v">$order</span>-&gt;id, [<span class="tk-s">'total'</span> =&gt; <span class="tk-v">$order</span>-&gt;total]));
+});</code></pre></div></div>
+      <div role="tabpanel" id="p3" aria-labelledby="t3" hidden><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code><span class="tk-c"># run a consumer for a topic</span>
+php artisan kafka:consume orders.events "App\Modules\Payments\Infrastructure\Messaging\OrderCreatedHandler"
+
+<span class="tk-c"># the handler receives the standard event envelope</span>
+<span class="tk-k">final class</span> OrderCreatedHandler <span class="tk-k">implements</span> MessageHandler
+{
+    <span class="tk-k">public function</span> handle(array <span class="tk-v">$event</span>): <span class="tk-k">void</span>
+    {
+        <span class="tk-v">$payload</span> = <span class="tk-v">$event</span>[<span class="tk-s">'payload'</span>];
+    }
+}</code></pre></div></div>
+      <div role="tabpanel" id="p4" aria-labelledby="t4" hidden><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code><span class="tk-c"># clients only ever talk to the gateway</span>
+curl -H "Authorization: Bearer $TOKEN" \
+     http://127.0.0.1:8000/api/v1/orders/health</code></pre></div></div>
+      <div role="tabpanel" id="p5" aria-labelledby="t5" hidden><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code><span class="tk-c"># apps/orders-service/.env.example (excerpt)</span>
+INTERNAL_SERVICE_SECRET=
+KAFKA_ENABLED=false
+KAFKA_CLIENT_ID=orders-service
+KAFKA_GROUP_ID=orders-service
+KAFKA_TOPIC_DEFAULT=orders.events
+KAFKA_SECURITY_PROTOCOL=plaintext</code></pre></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ARCHITECTURE ================= -->
+<section id="architecture" aria-labelledby="h-arch">
+  <div class="wrap">
+    <h2 class="title" id="h-arch">Architecture</h2>
+    <p class="sub"><strong style="color:var(--text)">Laravel is used for the backend microservices.</strong> Nx and the modular architecture organise them; they do not compete with Laravel.</p>
+    <div class="split">
+      <div class="code reveal"><pre><code>Nx workspace
+│
+├── apps/api                  gateway: auth, throttling, routing (Laravel)
+├── apps/&lt;name&gt;-service      Laravel microservices
+│      ├── Users
+│      ├── Orders
+│      └── Payments …
+├── packages/laravel-kafka    shared Kafka kit
+├── packages/laravel-tenancy  optional multi-tenancy
+└── infrastructure/           Dockerfile, scripts, Postgres init
+                               │
+                             Kafka</code></pre></div>
+      <div class="table-wrap"><table>
+        <tbody>
+          <tr><td><strong>Nx</strong></td><td>Task graph, caching, affected builds/tests.</td></tr>
+          <tr><td><strong>Modular architecture</strong></td><td>Domain / Application / Infrastructure / Presentation modules; controllers call actions only.</td></tr>
+          <tr><td><strong>Laravel</strong></td><td>Gateway and every microservice.</td></tr>
+          <tr><td><strong>Kafka</strong></td><td>Asynchronous service-to-service integration.</td></tr>
+          <tr><td><strong>CLI</strong></td><td>Scaffold, generate, develop, upgrade.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <p><a href="/docs/architecture.html">Full architecture guide &rarr;</a></p>
+  </div>
+</section>
+
+<!-- ================= LEARN ================= -->
+<section class="alt" id="learn" aria-labelledby="h-learn">
+  <div class="wrap">
+    <h2 class="title" id="h-learn">Learn NestLaravel</h2>
+    <ol class="path">
+      <li><a class="card" href="/docs/introduction.html"><span class="n">01</span><h3>Introduction</h3><p>Understand the architecture.</p></a></li>
+      <li><a class="card" href="/docs/installation.html"><span class="n">02</span><h3>Installation</h3><p>Create your first project.</p></a></li>
+      <li><a class="card" href="/docs/architecture.html"><span class="n">03</span><h3>Workspace</h3><p>Understand Nx and the layout.</p></a></li>
+      <li><a class="card" href="/docs/microservices.html"><span class="n">04</span><h3>Microservices</h3><p>Create Laravel services.</p></a></li>
+      <li><a class="card" href="/docs/gateway.html"><span class="n">05</span><h3>APIs</h3><p>Build backend APIs behind the gateway.</p></a></li>
+      <li><a class="card" href="/docs/kafka.html"><span class="n">06</span><h3>Kafka</h3><p>Connect services through events.</p></a></li>
+      <li><a class="card" href="/docs/database.html"><span class="n">07</span><h3>Databases</h3><p>Configure service databases.</p></a></li>
+      <li><a class="card" href="/docs/testing.html"><span class="n">08</span><h3>Testing</h3><p>Test services and events.</p></a></li>
+      <li><a class="card" href="/docs/deployment.html"><span class="n">09</span><h3>Deployment</h3><p>Deploy to production.</p></a></li>
+      <li><a class="card" href="/docs/scaling.html"><span class="n">10</span><h3>Scaling</h3><p>Organise larger systems.</p></a></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= DOCS / CLI ================= -->
+<section id="docs" aria-labelledby="h-docs">
+  <div class="wrap">
+    <h2 class="title" id="h-docs">Documentation portal</h2>
+    <p class="sub">Searchable documentation generated from the repository's own guides. Press <kbd>/</kbd> or <kbd>Ctrl</kbd>+<kbd>K</kbd> anywhere to search.</p>
+    <p class="cta"><button class="btn btn-ghost" type="button" data-open-search>Search the docs</button><a class="btn btn-primary" href="/docs/introduction.html">Open documentation</a></p>
+  </div>
+</section>
+
+<section class="alt" id="cli" aria-labelledby="h-cli">
+  <div class="wrap">
+    <h2 class="title" id="h-cli">CLI</h2>
+    <p class="sub">Only commands that exist in the shipped CLI are listed. <a href="/docs/cli.html">Full reference</a>.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>npx nestlaravel create my-project</code></td><td>New workspace with gateway, Kafka kit, secrets and validation</td></tr>
+        <tr><td><code>npx nestlaravel generate service users</code></td><td>New Laravel microservice wired into gateway, Nx and Docker</td></tr>
+        <tr><td><code>npx nestlaravel generate kafka-topic|kafka-event</code></td><td>Register a topic / create a domain event (and consumer)</td></tr>
+        <tr><td><code>npx nestlaravel dev</code></td><td>Start infrastructure and serve all apps</td></tr>
+        <tr><td><code>npx nestlaravel test</code> / <code>lint</code></td><td>Run every app's tests / style checks via Nx</td></tr>
+        <tr><td><code>npx nestlaravel build</code></td><td>Build production Docker images</td></tr>
+        <tr><td><code>npx nestlaravel update</code></td><td>Safe, backed-up upgrade (<code>--dry-run</code> first)</td></tr>
+        <tr><td><code>npx nestlaravel add tenancy</code></td><td>Install the optional multi-tenancy package</td></tr>
+        <tr><td><code>npx nestlaravel doctor</code></td><td>Check Node, PHP, Composer, Docker</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ================= EXAMPLES ================= -->
+<section id="examples" aria-labelledby="h-ex">
+  <div class="wrap">
+    <h2 class="title" id="h-ex">Examples</h2>
+    <p class="sub">Worked examples that exist in the documentation today.</p>
+    <div class="grid">
+      <div class="card"><h3>Multiple microservices</h3><p>Generate services, register them on the gateway and call them.</p><p style="margin-top:10px"><a href="/docs/microservices.html">Open documentation</a></p></div>
+      <div class="card"><h3>Kafka events</h3><p>Topics, events, consumers, retries and dead letters.</p><p style="margin-top:10px"><a href="/docs/kafka.html">Open documentation</a></p></div>
+      <div class="card"><h3>Authentication</h3><p>Sanctum tokens and role-based access on the gateway.</p><p style="margin-top:10px"><a href="/docs/authentication.html">Open documentation</a></p></div>
+      <div class="card"><h3>Docker deployment</h3><p>Compose stack and per-service images.</p><p style="margin-top:10px"><a href="/docs/docker.html">Open documentation</a></p></div>
+      <div class="card"><h3>Production deployment</h3><p>Docker, Linux/VPS, optional Kubernetes and CI/CD.</p><p style="margin-top:10px"><a href="/docs/deployment.html">Open documentation</a></p></div>
+      <div class="card"><h3>Multi-tenancy</h3><p>Tenant-scoped data, jobs, cache and events.</p><p style="margin-top:10px"><a href="/docs/multi-tenancy.html">Open documentation</a></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRODUCTION ================= -->
+<section class="alt" id="production" aria-labelledby="h-prod">
+  <div class="wrap">
+    <h2 class="title" id="h-prod">From development to production</h2>
+    <div class="pipeline" role="list"><span class="s" role="listitem">Develop</span><span class="a" aria-hidden="true">&rarr;</span><span class="s" role="listitem">Test</span><span class="a" aria-hidden="true">&rarr;</span><span class="s" role="listitem">Build</span><span class="a" aria-hidden="true">&rarr;</span><span class="s" role="listitem">Containerise</span><span class="a" aria-hidden="true">&rarr;</span><span class="s" role="listitem">Deploy</span><span class="a" aria-hidden="true">&rarr;</span><span class="s" role="listitem">Monitor</span></div>
+    <div class="grid">
+      <div class="card"><h3>Docker</h3><p>One production image per Laravel app, with <code>ext-rdkafka</code>, run as web, worker, outbox publisher or consumer.</p></div>
+      <div class="card"><h3>Linux / VPS</h3><p>Supervisor programs and nginx; firewall services to the gateway host.</p></div>
+      <div class="card"><h3>CI/CD</h3><p>GitHub Actions templates for tests, audits and image builds.</p></div>
+      <div class="card"><h3>Kubernetes (optional)</h3><p>Not required. Guidance for Deployments, probes and network policies is in the deployment guide.</p></div>
+    </div>
+    <p style="margin-top:16px"><a href="/docs/deployment.html">Deployment guide &rarr;</a></p>
+  </div>
+</section>
+
+<!-- ================= SECURITY ================= -->
+<section id="security" aria-labelledby="h-sec">
+  <div class="wrap">
+    <h2 class="title" id="h-sec">Security by design</h2>
+    <p class="sub">Controls are documented and covered by tests. No system is perfectly secure &mdash; the guide lists known limitations too.</p>
+    <div class="grid">
+      <div class="card"><h3>Authentication &amp; authorization</h3><p>Sanctum tokens with expiry; roles and permissions; privileged roles cannot be self-assigned.</p></div>
+      <div class="card"><h3>Service isolation</h3><p>Internal services accept only HMAC-signed gateway calls and fail closed when unconfigured.</p></div>
+      <div class="card"><h3>Secrets &amp; databases</h3><p>Generated per-app secrets, git-ignored env files, one database and role per service.</p></div>
+      <div class="card"><h3>Validation &amp; rate limiting</h3><p>Form requests, path sanitising, per-IP and per-account throttling.</p></div>
+      <div class="card"><h3>Kafka security</h3><p>TLS/SASL settings, <code>acks=all</code> with idempotence, ACL guidance.</p></div>
+      <div class="card"><h3>Secure deployment</h3><p>Pinned images, private networks, no published service ports.</p></div>
+    </div>
+    <p style="margin-top:16px"><a href="/docs/security.html">Security Documentation &rarr;</a></p>
+  </div>
+</section>
+
+<!-- ================= GITHUB ================= -->
+<section class="alt" id="source" aria-labelledby="h-src">
+  <div class="wrap">
+    <h2 class="title" id="h-src">Built for developers. Open to exploration.</h2>
+    <p class="cta">
+      <a class="btn btn-primary" href="{{github}}" rel="noopener">View on GitHub</a>
+      <a class="btn btn-ghost" href="/docs/introduction.html">Read Documentation</a>
+      <a class="btn btn-ghost" href="{{githubIssues}}" rel="noopener">Report an Issue</a>
+      <a class="btn btn-ghost" href="/docs/contributing.html">Contribute</a>
+    </p>
+  </div>
+</section>
+
+<!-- ================= ABOUT ================= -->
+<section id="about" aria-labelledby="h-about">
+  <div class="wrap split">
+    <div>
+      <h2 class="title" id="h-about">About NestLaravel</h2>
+      <p class="sub">NestLaravel is developed by {{company}} as a developer-focused framework for building structured, modular and event-driven backend systems.</p>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr">
+      <div class="card"><span style="color:var(--muted);font-size:.85rem">Developed by</span><h3 style="margin-top:2px">{{developer}}</h3></div>
+      <div class="card"><span style="color:var(--muted);font-size:.85rem">Company</span><h3 style="margin-top:2px">{{company}}</h3></div>
+    </div>
+  </div>
+</section>
+
+</main>
+{{footer}}
+<script src="/assets/site.js" defer></script>
+</body>
+</html>

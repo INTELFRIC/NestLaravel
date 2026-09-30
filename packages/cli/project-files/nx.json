@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "defaultBase": "main",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "sharedGlobals": ["{workspaceRoot}/nestlaravel.json", "{workspaceRoot}/infrastructure/**/*"],
+    "production": ["default", "!{projectRoot}/tests/**/*", "!{projectRoot}/vendor/**/*"]
+  },
+  "targetDefaults": {
+    "test": { "cache": true, "inputs": ["default", "^default"] },
+    "lint": { "cache": true },
+    "build": { "cache": false }
+  },
+  "analytics": false
+}

@@ -1,0 +1,49 @@
+{
+  "name": "orders-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/orders-service/app",
+  "tags": [
+    "type:microservice",
+    "stack:laravel",
+    "domain:orders"
+  ],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan serve --host=127.0.0.1 --port=8001",
+        "cwd": "apps/orders-service"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan test",
+        "cwd": "apps/orders-service"
+      }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php artisan migrate",
+        "cwd": "apps/orders-service"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "php vendor/bin/pint --test",
+        "cwd": "apps/orders-service"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "node infrastructure/scripts/docker-build.mjs apps/orders-service",
+        "cwd": "."
+      }
+    }
+  }
+}

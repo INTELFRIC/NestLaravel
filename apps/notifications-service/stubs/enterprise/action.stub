@@ -1,0 +1,17 @@
+<?php
+
+namespace {{ namespace }};
+
+final class {{ class }}
+{
+    public function __construct()
+    {
+        //
+    }
+
+    public function execute(): mixed
+    {
+        // Coordinate domain logic and infrastructure via injected contracts.
+        return null;
+    }
+}

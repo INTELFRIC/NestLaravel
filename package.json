@@ -1,0 +1,36 @@
+{
+  "name": "@nestlaravel/source",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NestLaravel framework source: Nx + Laravel microservices + Kafka, with the nestlaravel CLI",
+  "scripts": {
+    "api": "php apps/api/artisan serve --host=127.0.0.1 --port=8000",
+    "api:test": "php apps/api/artisan test",
+    "orders-service": "php apps/orders-service/artisan serve --host=127.0.0.1 --port=8001",
+    "payments-service": "php apps/payments-service/artisan serve --host=127.0.0.1 --port=8002",
+    "notifications-service": "php apps/notifications-service/artisan serve --host=127.0.0.1 --port=8003",
+    "make:microservice": "php apps/api/artisan make:microservice",
+    "customer-portal": "npm run dev --workspace=customer-portal",
+    "admin-portal": "npm run dev --workspace=admin-portal",
+    "portals": "npm run customer-portal & npm run admin-portal",
+    "dev:api": "npm run api",
+    "cli": "node packages/cli/bin/nestlaravel.js",
+    "cli:test": "npm test --workspace=nestlaravel",
+    "e2e": "node scripts/e2e-clean-install.mjs",
+    "site:build": "node website/build.mjs",
+    "site:serve": "node website/serve.mjs"
+  },
+  "workspaces": [
+    "apps/admin-portal",
+    "apps/customer-portal",
+    "packages/api-client",
+    "packages/cli"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "devDependencies": {
+    "nx": "^23.2.1",
+    "semver": "^7.8.5"
+  }
+}

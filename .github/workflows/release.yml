@@ -1,0 +1,87 @@
+name: Release
+
+# Publishing happens ONLY after every validation job passes.
+#   1. tag push:           git tag v1.0.0 && git push --tags
+#   2. or manual dispatch: Actions → Release → Run workflow (input: version)
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.0.0). Must match packages/cli/package.json.'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # install → lint → unit → integration (Kafka) → security audit → build (docker) → CLI install test (E2E)
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    name: Version check + package validation
+    needs: validate
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - id: v
+        name: Resolve and verify the version
+        run: |
+          PKG=$(node -p "require('./packages/cli/package.json').version")
+          WANT="${{ github.event.inputs.version }}"
+          if [ -z "$WANT" ]; then WANT="${GITHUB_REF_NAME#v}"; fi
+          [ "$PKG" = "$WANT" ] || { echo "packages/cli version $PKG != requested $WANT"; exit 1; }
+          echo "$PKG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$' || { echo "not semver"; exit 1; }
+          grep -q "## \[$PKG\]" CHANGELOG.md || { echo "CHANGELOG.md has no entry for $PKG"; exit 1; }
+          if npm view "nestlaravel@$PKG" version >/dev/null 2>&1; then echo "nestlaravel@$PKG already published"; exit 1; fi
+          echo "version=$PKG" >> "$GITHUB_OUTPUT"
+      - run: npm install --no-audit --no-fund
+      - run: |
+          npm run build:templates --workspace=nestlaravel
+          npm run verify:package --workspace=nestlaravel
+      - run: npm pack --workspace=nestlaravel
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nestlaravel-tarball
+          path: nestlaravel-*.tgz
+          if-no-files-found: error
+
+  publish:
+    name: Tag, GitHub release, npm publish
+    needs: package
+    runs-on: ubuntu-latest
+    environment: npm-publish          # protect with required reviewers in repo settings
+    permissions:
+      contents: write                 # tag + release
+      id-token: write                 # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with: { name: nestlaravel-tarball }
+      - name: Git tag
+        run: |
+          V="${{ needs.package.outputs.version }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rev-parse "v$V" >/dev/null 2>&1 || { git tag "v$V" && git push origin "v$V"; }
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ needs.package.outputs.version }}"
+          awk "/^## \\[$V\\]/{f=1;next} /^## \\[/{f=0} f" CHANGELOG.md > notes.md
+          gh release create "v$V" nestlaravel-*.tgz --title "NestLaravel $V" --notes-file notes.md
+      - name: npm publish (with provenance)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish nestlaravel-*.tgz --access public --provenance

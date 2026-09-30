@@ -1,0 +1,106 @@
+# NestLaravel production-style stack: gateway + Laravel microservices + shared infra.
+#
+#   cp .env.example .env            # then fill DB_PASSWORD / REDIS_PASSWORD (or use `nestlaravel create`)
+#   docker compose up -d --build
+#   docker compose exec app php artisan migrate --force
+#
+# Interfaces:
+#   PUBLIC            app (gateway) — the ONLY container with a published port
+#   INTERNAL          <name>-service — no published ports, reachable only on the `internal` network,
+#                     and only with a valid gateway HMAC signature
+#   SERVICE-TO-SERVICE gateway → service (HTTP, HMAC) and service → Kafka → service (events)
+#
+# Infra (postgres/redis/kafka) is defined once in docker-compose.infra.yml.
+
+include:
+  - docker-compose.infra.yml
+
+name: ${COMPOSE_PROJECT_NAME:-nestlaravel}
+
+x-laravel-env: &laravel-env
+  APP_ENV: production
+  APP_DEBUG: "false"
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  # Structured logs (one JSON object per line, includes correlation_id) for log shippers.
+  LOG_STDERR_FORMATTER: Monolog\Formatter\JsonFormatter
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
+  REDIS_PORT: 6379
+  QUEUE_CONNECTION: redis
+  CACHE_STORE: redis
+  SESSION_DRIVER: redis
+  KAFKA_ENABLED: "true"
+  KAFKA_BROKERS: kafka:29092
+  # Dev broker is PLAINTEXT. Production: sasl_ssl + KAFKA_SASL_* from your secret store.
+  KAFKA_SECURITY_PROTOCOL: ${KAFKA_SECURITY_PROTOCOL:-plaintext}
+
+x-laravel-app: &laravel-app
+  image: ${REGISTRY:-nestlaravel}/gateway:${IMAGE_TAG:-dev}
+  build:
+    context: .
+    dockerfile: infrastructure/docker/laravel.Dockerfile
+    args:
+      APP_DIR: apps/api
+  env_file:
+    - path: ./apps/api/.env
+      required: false
+  networks: [internal]
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    kafka:
+      condition: service_healthy
+
+services:
+  # ---- PUBLIC: API gateway -------------------------------------------------
+  app:
+    <<: *laravel-app
+    environment:
+      <<: *laravel-env
+      APP_NAME: gateway
+      DB_DATABASE: ${DB_DATABASE:-app}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      KAFKA_CLIENT_ID: gateway
+      KAFKA_GROUP_ID: gateway
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-0}
+      # @nestlaravel:gateway-env (per-service signing secrets are appended here)
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:80"   # put a TLS-terminating reverse proxy in front
+
+  worker:
+    <<: *laravel-app
+    command: ["php", "artisan", "queue:work", "redis", "--sleep=1", "--tries=3", "--max-time=3600"]
+    environment:
+      <<: *laravel-env
+      APP_NAME: gateway
+      DB_DATABASE: ${DB_DATABASE:-app}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      SKIP_OPTIMIZE: "1"
+    healthcheck:
+      disable: true
+
+  scheduler:
+    <<: *laravel-app
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      <<: *laravel-env
+      APP_NAME: gateway
+      DB_DATABASE: ${DB_DATABASE:-app}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      SKIP_OPTIMIZE: "1"
+    healthcheck:
+      disable: true
+
+  # ---- INTERNAL: microservices (added by `nestlaravel generate service`) ----
+  # @nestlaravel:services

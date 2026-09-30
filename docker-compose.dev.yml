@@ -1,0 +1,77 @@
+# Development overrides: bind-mount source, Xdebug-ready image, artisan serve.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Infra ports (postgres/redis/kafka) are already published on 127.0.0.1 by docker-compose.infra.yml.
+# Optional: generate APP_KEY on host first (`php artisan key:generate`).
+
+services:
+  app:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: development
+    image: nest-laravel-app:dev
+    container_name: nest-laravel-app
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: debug
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-1}
+      SKIP_OPTIMIZE: "1"
+      WAIT_FOR_DB: "1"
+      # Xdebug (trigger via browser extension / IDE)
+      XDEBUG_MODE: ${XDEBUG_MODE:-develop,debug}
+      XDEBUG_CONFIG: client_host=host.docker.internal client_port=9003
+    command: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+    volumes:
+      - ./apps/api:/var/www/html
+      - nest_laravel_dev_vendor:/var/www/html/vendor
+      - nest_laravel_dev_node_modules:/var/www/html/node_modules
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/up"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  worker:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: development
+    image: nest-laravel-app:dev
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      SKIP_OPTIMIZE: "1"
+    command: ["php", "artisan", "queue:work", "redis", "--sleep=1", "--tries=3", "--verbose"]
+    volumes:
+      - ./apps/api:/var/www/html
+      - nest_laravel_dev_vendor:/var/www/html/vendor
+
+  scheduler:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: development
+    image: nest-laravel-app:dev
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      SKIP_OPTIMIZE: "1"
+    volumes:
+      - ./apps/api:/var/www/html
+      - nest_laravel_dev_vendor:/var/www/html/vendor
+
+volumes:
+  nest_laravel_dev_vendor:
+    name: nest-laravel-dev-vendor
+  nest_laravel_dev_node_modules:
+    name: nest-laravel-dev-node-modules

@@ -1,0 +1,49 @@
+{
+    "name": "nestlaravel/tenancy",
+    "description": "Optional NestLaravel multi-tenancy: single-database tenant isolation for Eloquent, queues, cache keys, storage paths and Kafka events.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "illuminate/support": "^13.0",
+        "illuminate/database": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/queue": "^13.0"
+    },
+    "suggest": {
+        "nestlaravel/kafka": "Enables tenant propagation through Kafka events (TenantAwareHandler)."
+    },
+    "require-dev": {
+        "nestlaravel/kafka": "@dev",
+        "orchestra/testbench": "^11.0",
+        "phpunit/phpunit": "^12.5"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../laravel-kafka"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "NestLaravel\\Tenancy\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "NestLaravel\\Tenancy\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "NestLaravel\\Tenancy\\TenancyServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "platform": {
+      "command": "php",
+      "args": ["artisan", "mcp:start", "platform"],
+      "cwd": "apps/api"
+    }
+  }
+}

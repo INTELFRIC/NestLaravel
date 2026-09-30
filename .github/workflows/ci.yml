@@ -1,0 +1,159 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: PHP (${{ matrix.php }}) — lint + unit/feature tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl, pdo_sqlite, bcmath, redis
+          tools: composer:v2
+          coverage: none
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ matrix.php }}-${{ hashFiles('**/composer.lock', '**/composer.json') }}
+      - name: Install + lint + test each PHP project
+        run: |
+          set -e
+          for dir in apps/api apps/orders-service apps/payments-service apps/notifications-service packages/laravel-kafka packages/laravel-tenancy; do
+            echo "::group::$dir"
+            composer install --working-dir="$dir" --no-interaction --prefer-dist --no-progress
+            if [ -x "$dir/vendor/bin/pint" ]; then (cd "$dir" && php vendor/bin/pint --test); fi
+            (cd "$dir" && php vendor/bin/phpunit)
+            echo "::endgroup::"
+          done
+
+  kafka-integration:
+    name: Kafka integration (real broker)
+    runs-on: ubuntu-latest
+    services:
+      kafka:
+        image: apache/kafka:4.0.0
+        ports: ['9092:9092']
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+          KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_sqlite, bcmath, rdkafka
+          tools: composer:v2
+          coverage: none
+      - run: composer install --working-dir=packages/laravel-kafka --no-interaction --prefer-dist --no-progress
+      - name: Wait for broker
+        run: |
+          for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/9092) 2>/dev/null && exit 0; sleep 2; done; exit 1
+      - name: Producer → broker → consumer → pipeline → DLQ
+        working-directory: packages/laravel-kafka
+        env:
+          KAFKA_INTEGRATION_BROKERS: 127.0.0.1:9092
+        run: php vendor/bin/phpunit --filter RdKafkaBrokerTest --fail-on-skipped
+
+  node:
+    name: CLI (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm install --no-audit --no-fund
+      - run: npm test --workspace=nestlaravel
+      - name: Build templates (includes secret scan) + validate tarball
+        run: |
+          npm run build:templates --workspace=nestlaravel
+          npm run verify:package --workspace=nestlaravel
+
+  security:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.4', tools: 'composer:v2', extensions: 'mbstring, intl' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install --no-audit --no-fund
+      - run: npm audit --omit=dev --audit-level=high
+      - name: composer audit (all PHP projects)
+        run: |
+          for dir in apps/api apps/orders-service apps/payments-service apps/notifications-service packages/laravel-kafka packages/laravel-tenancy; do
+            composer install --working-dir="$dir" --no-interaction --no-scripts --no-progress >/dev/null
+            composer audit --working-dir="$dir"
+          done
+      - name: Secret scan (working tree)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Docker images build + compose config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compose files are valid
+        run: |
+          export DB_PASSWORD=x REDIS_PASSWORD=y APP_KEY=k
+          docker compose config -q
+          docker compose -f docker-compose.infra.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.test.yml config -q
+      - name: Build gateway + a service image
+        run: |
+          docker build -f infrastructure/docker/laravel.Dockerfile --build-arg APP_DIR=apps/api -t nl/gateway:ci .
+          docker build -f infrastructure/docker/laravel.Dockerfile --build-arg APP_DIR=apps/orders-service -t nl/orders:ci .
+          docker run --rm nl/orders:ci php -m | grep -i rdkafka
+
+  clean-install:
+    name: Clean-install E2E (installs the packed npm artefact)
+    needs: [php, node]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_sqlite, bcmath
+          tools: composer:v2
+      - run: npm install --no-audit --no-fund
+      - run: node scripts/e2e-clean-install.mjs
