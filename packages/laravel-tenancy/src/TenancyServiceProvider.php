@@ -22,6 +22,10 @@ final class TenancyServiceProvider extends ServiceProvider
     {
         $this->publishes([__DIR__.'/../config/tenancy.php' => config_path('tenancy.php')], 'nestlaravel-tenancy-config');
 
+        if ($this->app->runningInConsole()) {
+            $this->commands([Console\TenantCheckCommand::class]);
+        }
+
         // $table->tenantId() in migrations: indexed, non-null tenant column.
         Blueprint::macro('tenantId', function (): void {
             /** @var Blueprint $this */

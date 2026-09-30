@@ -26,7 +26,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, intl, pdo_sqlite, bcmath, redis
+          extensions: mbstring, intl, pdo_sqlite, bcmath, redis, pcntl, posix
           tools: composer:v2
           coverage: none
       - name: Cache Composer
@@ -44,6 +44,55 @@ jobs:
             (cd "$dir" && php vendor/bin/phpunit)
             echo "::endgroup::"
           done
+
+  reliability-db:
+    name: Reliability on real databases (${{ matrix.driver }}) — multi-process inbox concurrency
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        driver: [pgsql, mysql]
+    services:
+      pgsql:
+        image: postgres:16
+        env: { POSTGRES_DB: nl_test, POSTGRES_USER: nl, POSTGRES_PASSWORD: nl_test_pw }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U nl -d nl_test" --health-interval 5s --health-timeout 5s --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_DATABASE: nl_test, MYSQL_USER: nl, MYSQL_PASSWORD: nl_test_pw, MYSQL_ROOT_PASSWORD: root_pw }
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u nl -pnl_test_pw" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, pcntl, posix
+          tools: composer:v2
+          coverage: none
+      - run: composer install --working-dir=packages/laravel-kafka --no-interaction --prefer-dist --no-progress
+      - name: Six processes, one event_id → exactly one business effect
+        working-directory: packages/laravel-kafka
+        env:
+          TEST_DB_DRIVER: ${{ matrix.driver }}
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: ${{ matrix.driver == 'pgsql' && '5432' || '3306' }}
+          TEST_DB_DATABASE: nl_test
+          TEST_DB_USERNAME: nl
+          TEST_DB_PASSWORD: nl_test_pw
+        run: php vendor/bin/phpunit --filter ConcurrentInboxTest --fail-on-skipped
+
+  k8s-manifests:
+    name: Kubernetes manifests are valid
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: kubeconform
+        run: |
+          docker run --rm -v "$PWD/infrastructure/k8s:/k8s:ro" ghcr.io/yannh/kubeconform:latest -strict -summary -ignore-missing-schemas /k8s
 
   kafka-integration:
     name: Kafka integration (real broker)
