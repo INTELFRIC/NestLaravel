@@ -1,0 +1,41 @@
+{
+    "php": "8.4.12",
+    "os": "Windows",
+    "sqlite": "3.49.2",
+    "date": "2026-09-30T14:12:30+00:00",
+    "results": {
+        "consumer.inbox_duplicate_skipped_no_log_io": {
+            "ops_per_sec": 2809.7,
+            "us_per_op": 355.92,
+            "n": 2000
+        },
+        "inbox.process_duplicate_direct_no_log_io": {
+            "ops_per_sec": 2604.9,
+            "us_per_op": 383.89,
+            "n": 2000
+        },
+        "inbox.process_new_event_direct_no_log_io": {
+            "ops_per_sec": 1400.2,
+            "us_per_op": 714.16,
+            "n": 2000
+        },
+        "consumer.inbox_duplicate_skipped_with_file_log": {
+            "ops_per_sec": 703.2,
+            "us_per_op": 1421.98,
+            "n": 500
+        },
+        "http.handler_only": {
+            "ops_per_sec": 39566.4,
+            "us_per_op": 25.27,
+            "n": 5000
+        },
+        "http.handler_with_observe_middleware": {
+            "ops_per_sec": 5942.4,
+            "us_per_op": 168.28,
+            "n": 5000
+        },
+        "http.observability_overhead_us_per_request": {
+            "value": 143.01
+        }
+    }
+}
