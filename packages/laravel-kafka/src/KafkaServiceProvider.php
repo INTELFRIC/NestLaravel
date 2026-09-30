@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use NestLaravel\Kafka\Consumers\ConsumerPipeline;
 use NestLaravel\Kafka\Console\KafkaConsumeCommand;
 use NestLaravel\Kafka\Console\OutboxPublishCommand;
+use NestLaravel\Kafka\Console\SagaRecoverCommand;
+use NestLaravel\Kafka\Saga\SagaOrchestrator;
 use NestLaravel\Kafka\Contracts\EventBus;
 use NestLaravel\Kafka\Contracts\IdempotencyStore;
 use NestLaravel\Kafka\Inbox\EventInbox;
@@ -49,6 +51,8 @@ final class KafkaServiceProvider extends ServiceProvider
 
             return $registry;
         });
+
+        $this->app->singleton(SagaOrchestrator::class, static fn (): SagaOrchestrator => new SagaOrchestrator((int) config('kafka.saga.compensation_retries', 3)));
 
         $this->app->singleton(EventInbox::class, static function ($app): EventInbox {
             $config = $app->make(KafkaConfig::class);
@@ -143,7 +147,7 @@ final class KafkaServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->publishes([__DIR__.'/../config/kafka.php' => config_path('kafka.php')], 'nestlaravel-kafka-config');
-            $this->commands([OutboxPublishCommand::class, KafkaConsumeCommand::class]);
+            $this->commands([OutboxPublishCommand::class, KafkaConsumeCommand::class, SagaRecoverCommand::class]);
         }
     }
 
