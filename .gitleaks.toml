@@ -1,0 +1,8 @@
+title = "NestLaravel gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Example env templates contain empty placeholders only (verified by the template secret scan)."
+paths = ['''(^|/)\.env\.example$''']

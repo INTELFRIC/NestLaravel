@@ -121,7 +121,7 @@ jobs:
           done
       - name: Secret scan (working tree + history)
         run: |
-          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --redact --verbose
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --config /repo/.gitleaks.toml --redact --verbose
 
   docker:
     name: Docker images build + compose config
