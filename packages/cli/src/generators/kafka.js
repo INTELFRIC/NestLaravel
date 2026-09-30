@@ -8,7 +8,7 @@ import { toEnvName, toStudly, validateName } from '../workspace.js';
 const EVENT_TYPE = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,3}$/;
 
 /** Resolve the target Laravel app + the namespace/module conventions it uses. */
-function resolveTarget(root, service) {
+export function resolveTarget(root, service) {
   if (!service) throw new CliError('Pass the target with --service <name> (use "api" for the gateway).');
   const isGateway = service === 'api' || service === 'gateway';
   const name = isGateway ? 'api' : validateName(service, { kind: 'service name' });

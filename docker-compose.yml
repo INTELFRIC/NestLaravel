@@ -20,10 +20,10 @@ name: ${COMPOSE_PROJECT_NAME:-nestlaravel}
 x-laravel-env: &laravel-env
   APP_ENV: production
   APP_DEBUG: "false"
-  LOG_CHANNEL: stderr
+  # Structured logs: one JSON object per line with request/correlation/trace/tenant ids, secrets redacted.
+  LOG_CHANNEL: nestlaravel
   LOG_LEVEL: ${LOG_LEVEL:-info}
-  # Structured logs (one JSON object per line, includes correlation_id) for log shippers.
-  LOG_STDERR_FORMATTER: Monolog\Formatter\JsonFormatter
+  KAFKA_INBOX_ENABLED: "true"
   DB_CONNECTION: pgsql
   DB_HOST: postgres
   DB_PORT: 5432
@@ -51,6 +51,8 @@ x-laravel-app: &laravel-app
       required: false
   networks: [internal]
   restart: unless-stopped
+  # SIGTERM → consumers/outbox finish the in-flight message or batch and exit 0. Docker's default (10 s) would SIGKILL first.
+  stop_grace_period: 40s
   depends_on:
     postgres:
       condition: service_healthy

@@ -51,8 +51,10 @@ class GracefulShutdownTest extends ReliabilityTestCase
     protected function tearDown(): void
     {
         // Restore default signal disposition so PHPUnit itself is not affected by the command's handlers.
-        pcntl_signal(SIGTERM, SIG_DFL);
-        pcntl_signal(SIGINT, SIG_DFL);
+        if (function_exists('pcntl_signal')) {
+            pcntl_signal(SIGTERM, SIG_DFL);
+            pcntl_signal(SIGINT, SIG_DFL);
+        }
         parent::tearDown();
     }
 

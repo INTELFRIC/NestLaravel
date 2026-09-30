@@ -26,14 +26,24 @@ final class ProductionChecker
         $this->findings = [];
         $production = config('app.env') === 'production';
 
-        $this->environment($production);
-        $this->database($production);
-        $this->stateStores($production);
-        $this->kafka($production);
-        $this->reliability();
-        $this->security($production);
-        $this->observability();
-        $this->operations();
+        // A section that blows up (dependency down, missing table…) must become a FAIL finding, never a crash:
+        // the whole point of this command is to be usable while the system is unhealthy.
+        foreach ([
+            'environment' => fn () => $this->environment($production),
+            'database' => fn () => $this->database($production),
+            'state stores' => fn () => $this->stateStores($production),
+            'kafka' => fn () => $this->kafka($production),
+            'reliability' => fn () => $this->reliability(),
+            'security' => fn () => $this->security($production),
+            'observability' => fn () => $this->observability(),
+            'operations' => fn () => $this->operations(),
+        ] as $section => $check) {
+            try {
+                $check();
+            } catch (Throwable $e) {
+                $this->fail('check_error_'.str_replace(' ', '_', $section), "The {$section} checks could not run: ".strtok($e->getMessage(), "\n"));
+            }
+        }
 
         return $this->findings;
     }

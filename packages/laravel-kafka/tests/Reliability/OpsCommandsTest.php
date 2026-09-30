@@ -100,6 +100,29 @@ class OpsCommandsTest extends ReliabilityTestCase
         $this->assertSame(1, Artisan::call('nestlaravel:check'));
     }
 
+    public function test_production_check_reports_an_unreachable_database_instead_of_crashing(): void
+    {
+        $original = config('database.default');
+        config([
+            'database.connections.broken' => ['driver' => 'sqlite', 'database' => sys_get_temp_dir().'/nl-does-not-exist/none.sqlite', 'prefix' => ''],
+            'database.default' => 'broken',
+        ]);
+
+        try {
+            \Illuminate\Support\Facades\DB::purge('broken');
+            $code = Artisan::call('nestlaravel:check', ['--json' => true]);
+            $report = json_decode(Artisan::output(), true, 512, JSON_THROW_ON_ERROR);
+        } finally {
+            config(['database.default' => $original]);
+        }
+
+        $byId = array_column($report['findings'], null, 'id');
+        $this->assertSame(1, $code, 'exit code signals the failure');
+        $this->assertSame('fail', $byId['database']['status']);
+        $this->assertArrayHasKey('app_key', $byId, 'sections before the failure still ran');
+        $this->assertNotEmpty(array_filter($report['findings'], fn ($f) => $f['id'] === 'backups'), 'later sections still reported');
+    }
+
     public function test_production_check_passes_a_hardened_configuration_but_still_reports_warnings(): void
     {
         config([

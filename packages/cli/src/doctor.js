@@ -1,3 +1,5 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { capture } from './exec.js';
 import { RUNTIME } from './versions.js';
 import { c, log } from './ui.js';
@@ -80,6 +82,53 @@ export function checkRequirements({ needDocker = false } = {}) {
       : 'not loaded — apps fall back to the log/null Kafka driver on the host (Docker images include it).',
   });
 
+  const modules = (capture('php', ['-m']) ?? '').toLowerCase().split(/\r?\n/);
+  const signals = ['pcntl', 'posix'].filter((m) => !modules.includes(m));
+  results.push({
+    name: 'php-pcntl',
+    ok: signals.length === 0,
+    required: false,
+    version: signals.length === 0 ? 'loaded' : null,
+    message: signals.length === 0
+      ? 'pcntl + posix loaded (graceful SIGTERM shutdown of consumers/outbox workers)'
+      : `${signals.join(', ')} not loaded — workers cannot shut down gracefully on this machine (Linux containers include them).`,
+  });
+
+  return results;
+}
+
+/**
+ * Inspect a workspace's apps (only when run inside one). Returns [{ name, ok, required:false, message }].
+ * Static checks only — `nestlaravel production:check` audits the effective configuration.
+ */
+export function checkWorkspace(root) {
+  const results = [];
+  const apps = join(root, 'apps');
+  if (!existsSync(apps)) return results;
+
+  for (const entry of readdirSync(apps, { withFileTypes: true })) {
+    const dir = join(apps, entry.name);
+    if (!entry.isDirectory() || !existsSync(join(dir, 'artisan'))) continue;
+
+    const problems = [];
+    if (!existsSync(join(dir, 'vendor', 'autoload.php'))) problems.push('composer dependencies not installed');
+    const envFile = join(dir, '.env');
+    if (!existsSync(envFile)) {
+      problems.push('.env missing (copy .env.example)');
+    } else {
+      const env = Object.fromEntries(
+        readFileSync(envFile, 'utf8')
+          .split(/\r?\n/)
+          .map((l) => l.match(/^([A-Z0-9_]+)=(.*)$/))
+          .filter(Boolean)
+          .map((m) => [m[1], m[2].replace(/^["']|["']$/g, '')]),
+      );
+      if (!env.APP_KEY) problems.push('APP_KEY empty');
+      if (entry.name !== 'api' && (env.INTERNAL_SERVICE_SECRET ?? '').length < 32) problems.push('INTERNAL_SERVICE_SECRET missing or shorter than 32 chars');
+      if (env.APP_DEBUG === 'true' && env.APP_ENV === 'production') problems.push('APP_DEBUG=true in production');
+    }
+    results.push({ name: entry.name, ok: problems.length === 0, required: false, message: problems.length ? problems.join('; ') : 'env, secrets and dependencies look sane' });
+  }
   return results;
 }
 

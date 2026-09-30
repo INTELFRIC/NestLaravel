@@ -3,12 +3,14 @@ import { add, ADD_HELP } from './commands/add.js';
 import { create, CREATE_HELP } from './commands/create.js';
 import { update, UPDATE_HELP } from './commands/update.js';
 import { build, dev, lint, test } from './commands/tasks.js';
-import { checkRequirements, printRequirements } from './doctor.js';
+import { forward, OPS_COMMANDS, productionCheck } from './commands/ops.js';
+import { checkRequirements, checkWorkspace, printRequirements } from './doctor.js';
+import { generateEvent } from './generators/event.js';
 import { generateKafkaEvent, generateKafkaTopic } from './generators/kafka.js';
 import { generateService } from './generators/service.js';
 import { c, CliError, log } from './ui.js';
 import { FRAMEWORK_VERSION, RUNTIME } from './versions.js';
-import { requireWorkspace } from './workspace.js';
+import { findWorkspace, requireWorkspace } from './workspace.js';
 
 const HELP = `
 ${c.bold('NestLaravel')} ${FRAMEWORK_VERSION} — Nx + Laravel microservices + Kafka
@@ -18,7 +20,8 @@ ${c.bold('Usage')}  nestlaravel <command> [options]
 ${c.bold('Project')}
   create <name>                       Create a new workspace         (npx nestlaravel create my-app)
   generate service <name>             New Laravel microservice        (wired into gateway, Nx, Docker)
-  generate kafka-event <type>         New domain event                (--service <svc> [--consumer])
+  generate event <type>               Schema-governed event           (--service <svc> [--version N])
+  generate kafka-event <type>         Plain domain event              (--service <svc> [--consumer])
   generate kafka-topic <name>         Register a Kafka topic          (--service <svc> [--create])
   add tenancy                         Install the multi-tenancy package
 
@@ -28,8 +31,16 @@ ${c.bold('Develop')}
   test | lint                         Run via Nx across all apps     (--affected, --project <name>)
   build                               Build production Docker images (--tag, --registry)
 
+${c.bold('Operate')}   (run inside the workspace; --service <name> picks one app, default all)
+  production:check                    PASS/WARN/FAIL audit of the effective configuration (exit 1 on FAIL)
+  events:list | events:check          Registered events / schema-compatibility check
+  kafka:health                        Broker connectivity probe
+  outbox:status                       Outbox backlog, oldest pending, failed rows
+  dlq:list [topic]                    Peek dead-lettered messages
+  tenant:check                        Tenant-isolation audit (models vs tenant_id tables)
+
 ${c.bold('Maintain')}
-  doctor                              Check Node/PHP/Composer/Docker
+  doctor                              Check Node/PHP/Composer/Docker and workspace apps
   update                              Upgrade the workspace safely   (--dry-run first)
 
 Run "nestlaravel <command> --help" for details. Requires Node >= ${RUNTIME.node.min}, PHP >= ${RUNTIME.php.min}, Composer >= ${RUNTIME.composer.min}.
@@ -39,6 +50,7 @@ const GENERATE_HELP = `
 Usage: nestlaravel generate <generator> <name> [options]
 
   service <name> [--port N] [--force] [--skip-install]
+  event <domain.entity.action> --service <svc> [--version N] [--force]
   kafka-event <domain.entity.action> --service <svc> [--consumer] [--force]
   kafka-topic <name> --service <svc> [--create] [--partitions N]
 
@@ -77,11 +89,12 @@ export async function main(argv) {
         return 0;
       }
       const root = requireWorkspace();
-      if (!name) throw new CliError(`Missing name. Example: nestlaravel generate ${what} ${what === 'service' ? 'payments' : what === 'kafka-event' ? 'user.created --service users' : 'user-events --service users'}`);
+      if (!name) throw new CliError(`Missing name. Example: nestlaravel generate ${what} ${what === 'service' ? 'payments' : what === 'event' || what === 'kafka-event' ? 'user.created --service users' : 'user-events --service users'}`);
       if (what === 'service') await generateService(root, name, flags);
+      else if (what === 'event') await generateEvent(root, name, flags);
       else if (what === 'kafka-event') await generateKafkaEvent(root, name, flags);
       else if (what === 'kafka-topic') await generateKafkaTopic(root, name, flags);
-      else throw new CliError(`Unknown generator "${what}". Available: service, kafka-event, kafka-topic`);
+      else throw new CliError(`Unknown generator "${what}". Available: service, event, kafka-event, kafka-topic`);
       return 0;
     }
 
@@ -114,6 +127,12 @@ export async function main(argv) {
     case 'doctor': {
       log.info(`\n${c.bold('NestLaravel doctor')}\n`);
       const failed = printRequirements(checkRequirements({ needDocker: false }));
+      const workspace = findWorkspace();
+      if (workspace) {
+        log.info(`\n${c.bold('Workspace')} ${c.dim(workspace)}`);
+        printRequirements(checkWorkspace(workspace));
+        log.info(c.dim('\n  Runtime configuration audit: nestlaravel production:check'));
+      }
       log.blank();
       if (failed.length) {
         log.error(`${failed.length} required check(s) failed.`);
@@ -123,7 +142,11 @@ export async function main(argv) {
       return 0;
     }
 
+    case 'production:check':
+      return productionCheck(rest);
+
     default:
+      if (OPS_COMMANDS[command]) return forward(command, rest);
       log.error(`Unknown command "${command}".`);
       console.log(HELP);
       return 1;

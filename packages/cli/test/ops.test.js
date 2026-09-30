@@ -1,0 +1,124 @@
+import assert from 'node:assert/strict';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { test } from 'node:test';
+import { checkWorkspace } from '../src/doctor.js';
+import { laravelApps, selectApps, verdict, workspaceFindings } from '../src/commands/ops.js';
+import { generateEvent } from '../src/generators/event.js';
+
+function workspace() {
+  const root = mkdtempSync(join(tmpdir(), 'nl-ops-'));
+  const app = join(root, 'apps', 'orders-service');
+  mkdirSync(join(app, 'app', 'Modules', 'Orders'), { recursive: true });
+  mkdirSync(join(app, 'config'), { recursive: true });
+  writeFileSync(join(app, 'artisan'), '<?php');
+  writeFileSync(
+    join(app, 'config', 'kafka.php'),
+    "<?php\nreturn [\n    'events' => [\n        // @nestlaravel:events\n    ],\n];\n",
+  );
+  return { root, app };
+}
+
+test('generate event: schema class, registered once in config/kafka.php', async () => {
+  const { root, app } = workspace();
+  await generateEvent(root, 'order.created', { service: 'orders' });
+  await generateEvent(root, 'order.created', { service: 'orders', force: true });
+
+  const src = readFileSync(join(app, 'app/Modules/Orders/Domain/Events/OrderCreated.php'), 'utf8');
+  assert.match(src, /final class OrderCreated extends AbstractDomainEvent implements HasEventSchema/);
+  assert.match(src, /new EventSchema\('order\.created', 1, \[/);
+  assert.match(src, /public function version\(\): int\s*\{\s*return 1;/);
+
+  const cfg = readFileSync(join(app, 'config/kafka.php'), 'utf8');
+  const ref = '\\App\\Modules\\Orders\\Domain\\Events\\OrderCreated::class,';
+  assert.equal(cfg.split(ref).length - 1, 1, 'registered exactly once');
+  assert.ok(cfg.indexOf(ref) < cfg.indexOf('// @nestlaravel:events'), 'inserted before the marker');
+});
+
+test('generate event --version 2 creates a NEW class next to v1 and leaves v1 untouched', async () => {
+  const { root, app } = workspace();
+  await generateEvent(root, 'order.created', { service: 'orders' });
+  const v1 = readFileSync(join(app, 'app/Modules/Orders/Domain/Events/OrderCreated.php'), 'utf8');
+
+  await generateEvent(root, 'order.created', { service: 'orders', version: '2' });
+  const v2 = readFileSync(join(app, 'app/Modules/Orders/Domain/Events/OrderCreatedV2.php'), 'utf8');
+  assert.match(v2, /final class OrderCreatedV2/);
+  assert.match(v2, /new EventSchema\('order\.created', 2, \[/);
+  assert.equal(readFileSync(join(app, 'app/Modules/Orders/Domain/Events/OrderCreated.php'), 'utf8'), v1);
+
+  const cfg = readFileSync(join(app, 'config/kafka.php'), 'utf8');
+  assert.match(cfg, /OrderCreated::class,/);
+  assert.match(cfg, /OrderCreatedV2::class,/);
+});
+
+test('generate event rejects bad input, existing classes, the gateway and unknown versions', async () => {
+  const { root } = workspace();
+  await assert.rejects(() => generateEvent(root, 'Order Created', { service: 'orders' }), /Invalid event type/);
+  await assert.rejects(() => generateEvent(root, 'order.created', { service: 'orders', version: '0' }), /Invalid --version/);
+  await assert.rejects(() => generateEvent(root, 'order.created', { service: 'orders', version: 'x' }), /Invalid --version/);
+  await assert.rejects(() => generateEvent(root, 'order.created', {}), /--service/);
+  await assert.rejects(() => generateEvent(root, 'order.created', { service: '../etc' }), /Invalid service name/);
+  mkdirSync(join(root, 'apps', 'api'), { recursive: true });
+  await assert.rejects(() => generateEvent(root, 'order.created', { service: 'api' }), /generate kafka-event/);
+  await generateEvent(root, 'order.created', { service: 'orders' });
+  await assert.rejects(() => generateEvent(root, 'order.created', { service: 'orders' }), /already exists/);
+});
+
+test('generate event tells the user when the registration marker is missing instead of silently skipping', async () => {
+  const { root, app } = workspace();
+  writeFileSync(join(app, 'config/kafka.php'), "<?php\nreturn ['events' => []];\n");
+  await assert.rejects(() => generateEvent(root, 'order.created', { service: 'orders' }), /marker/);
+});
+
+test('verdict: any FAIL blocks, WARN passes with a label, never claims more than "no findings"', () => {
+  assert.deepEqual(verdict([{ status: 'pass' }]), { pass: 1, warn: 0, fail: 0, label: 'NO FINDINGS', exitCode: 0 });
+  assert.equal(verdict([{ status: 'pass' }, { status: 'warn' }]).label, 'READY WITH WARNINGS');
+  assert.equal(verdict([{ status: 'pass' }, { status: 'warn' }]).exitCode, 0);
+  const bad = verdict([{ status: 'fail' }, { status: 'warn' }, { status: 'pass' }]);
+  assert.equal(bad.label, 'NOT READY');
+  assert.equal(bad.exitCode, 1);
+});
+
+test('selectApps: finds services by short name, gateway alias, and rejects unknown names', () => {
+  const { root } = workspace();
+  mkdirSync(join(root, 'apps', 'api'), { recursive: true });
+  writeFileSync(join(root, 'apps', 'api', 'artisan'), '<?php');
+
+  assert.deepEqual(laravelApps(root).map((a) => a.name), ['api', 'orders-service']);
+  assert.deepEqual(selectApps(root, 'orders').map((a) => a.name), ['orders-service']);
+  assert.deepEqual(selectApps(root, 'gateway').map((a) => a.name), ['api']);
+  assert.equal(selectApps(root).length, 2);
+  assert.throws(() => selectApps(root, 'nope'), /No app "nope"/);
+});
+
+test('workspace findings: missing .gitignore for .env is a FAIL; compose without stop_grace_period is a WARN', () => {
+  const root = mkdtempSync(join(tmpdir(), 'nl-ws-find-'));
+  writeFileSync(join(root, 'docker-compose.yml'), 'services: {}\n');
+  let f = workspaceFindings(root);
+  assert.ok(f.some((x) => x.status === 'fail' && /\.env/.test(x.message)));
+  assert.ok(f.some((x) => x.status === 'warn' && /stop_grace_period/.test(x.message)));
+
+  writeFileSync(join(root, '.gitignore'), 'node_modules\n.env\n');
+  writeFileSync(join(root, 'docker-compose.yml'), 'services:\n  a:\n    stop_grace_period: 40s\n');
+  f = workspaceFindings(root);
+  assert.ok(!f.some((x) => x.status === 'fail'));
+  assert.ok(f.some((x) => x.status === 'pass' && /stop_grace_period/.test(x.message)));
+});
+
+test('doctor workspace check flags short service secrets, empty APP_KEY and debug in production', () => {
+  const { root, app } = workspace();
+  mkdirSync(join(app, 'vendor'), { recursive: true });
+  writeFileSync(join(app, 'vendor', 'autoload.php'), '<?php');
+  writeFileSync(join(app, '.env'), 'APP_KEY=\nINTERNAL_SERVICE_SECRET=short\nAPP_ENV=production\nAPP_DEBUG=true\n');
+
+  const [r] = checkWorkspace(root);
+  assert.equal(r.ok, false);
+  assert.match(r.message, /APP_KEY empty/);
+  assert.match(r.message, /INTERNAL_SERVICE_SECRET/);
+  assert.match(r.message, /APP_DEBUG=true in production/);
+
+  writeFileSync(join(app, '.env'), `APP_KEY=base64:abc\nINTERNAL_SERVICE_SECRET=${'x'.repeat(40)}\nAPP_ENV=production\nAPP_DEBUG=false\n`);
+  assert.equal(checkWorkspace(root)[0].ok, true);
+  assert.ok(existsSync(join(app, '.env')));
+});
