@@ -122,3 +122,60 @@ test('doctor workspace check flags short service secrets, empty APP_KEY and debu
   assert.equal(checkWorkspace(root)[0].ok, true);
   assert.ok(existsSync(join(app, '.env')));
 });
+
+test('migration 1.1.0: patches compose once, adds METRICS_TOKEN once, only warns about behaviour switches', async () => {
+  const { migrations } = await import('../src/migrations/index.js');
+  const migration = migrations.find((m) => m.version === '1.1.0');
+  assert.ok(migration, '1.1.0 migration is registered');
+
+  const root = mkdtempSync(join(tmpdir(), 'nl-mig-'));
+  const templates = mkdtempSync(join(tmpdir(), 'nl-tpl-'));
+  mkdirSync(join(templates, 'workspace/infrastructure/k8s'), { recursive: true });
+  writeFileSync(join(templates, 'workspace/infrastructure/k8s/service.yaml'), 'kind: Deployment\n');
+
+  mkdirSync(join(root, 'apps/api/config'), { recursive: true });
+  writeFileSync(
+    join(root, 'apps/api/config/gateway.php'),
+    "<?php\nreturn ['services' => [\n        'orders' => [\n            'enabled' => (bool) env('GATEWAY_ORDERS_ENABLED', true),\n        ],\n]];\n",
+  );
+  mkdirSync(join(root, 'apps/orders-service'), { recursive: true });
+  writeFileSync(join(root, 'apps/orders-service/artisan'), '<?php');
+  writeFileSync(join(root, 'apps/orders-service/.env'), 'APP_KEY=x\n');
+  writeFileSync(join(root, 'apps/api/.env'), 'APP_KEY=y\nMETRICS_TOKEN=keep-me\n');
+  writeFileSync(join(root, 'docker-compose.yml'), 'x-laravel-app: &laravel-app\n  image: x\n  restart: unless-stopped\n  networks: [internal]\n');
+
+  const warnings = [];
+  const ctx = {
+    root,
+    templates,
+    warn: (m) => warnings.push(m),
+    write: (f, c) => writeFileSync(f, c),
+    edit: (f, fn) => writeFileSync(f, fn(readFileSync(f, 'utf8'))),
+  };
+
+  const run = () => {
+    const applied = [];
+    for (const step of migration.steps) {
+      if (step.needed(ctx)) {
+        step.apply(ctx);
+        applied.push(step.title);
+      }
+    }
+    return applied;
+  };
+
+  assert.equal(run().length, 4);
+  assert.ok(existsSync(join(root, 'infrastructure/k8s/service.yaml')));
+  assert.match(readFileSync(join(root, 'docker-compose.yml'), 'utf8'), /restart: unless-stopped\n {2}stop_grace_period: 40s\n/);
+  assert.match(readFileSync(join(root, 'apps/orders-service/.env'), 'utf8'), /^METRICS_TOKEN=\S{20,}$/m);
+  assert.match(readFileSync(join(root, 'apps/api/.env'), 'utf8'), /METRICS_TOKEN=keep-me/, 'an existing token is never replaced');
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /php artisan migrate.*FIRST/s);
+  assert.doesNotMatch(readFileSync(join(root, 'apps/orders-service/.env'), 'utf8'), /KAFKA_INBOX_ENABLED/, 'behaviour switches are reported, never set');
+
+  // Idempotent: the concrete edits are not needed again (only the informational step keeps reporting).
+  const second = run();
+  assert.equal(second.length, 1);
+  assert.match(second[0], /Review runtime switches/);
+  assert.equal(readFileSync(join(root, 'docker-compose.yml'), 'utf8').split('stop_grace_period').length - 1, 1);
+});

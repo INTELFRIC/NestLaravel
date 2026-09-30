@@ -157,6 +157,61 @@ export const migrations = [
       },
     ],
   },
+  {
+    version: '1.1.0',
+    title: 'Adopt NestLaravel 1.1: inbox idempotency, concurrency-safe outbox, sagas, observability, health probes',
+    steps: [
+      {
+        title: 'Add Kubernetes reference manifests (infrastructure/k8s)',
+        needed: (ctx) => !existsSync(join(ctx.root, 'infrastructure', 'k8s')),
+        apply: (ctx) => copyTree(join(ctx.templates, 'workspace', 'infrastructure', 'k8s'), join(ctx.root, 'infrastructure', 'k8s')),
+      },
+      {
+        title: 'docker-compose.yml: stop_grace_period so consumers and the outbox publisher can finish before SIGKILL',
+        needed: (ctx) => {
+          const f = join(ctx.root, 'docker-compose.yml');
+          return existsSync(f) && /x-laravel-app:/.test(readFileSync(f, 'utf8')) && !/stop_grace_period/.test(readFileSync(f, 'utf8'));
+        },
+        apply: (ctx) => {
+          const f = join(ctx.root, 'docker-compose.yml');
+          let patched = false;
+          ctx.edit(f, (text) => {
+            const out = text.replace(/(x-laravel-app:[\s\S]*?\n {2}restart: unless-stopped\n)/, (m) => {
+              patched = true;
+              return `${m}  stop_grace_period: 40s\n`;
+            });
+            return out;
+          });
+          if (!patched) ctx.warn('Could not patch docker-compose.yml: add "stop_grace_period: 40s" to the app/worker services.');
+        },
+      },
+      {
+        title: 'METRICS_TOKEN: protect /metrics (generated when missing in existing .env files)',
+        needed: (ctx) =>
+          [join('apps', 'api'), ...serviceDirs(ctx).map((s) => join('apps', s.dir))].some((d) => {
+            const f = join(ctx.root, d, '.env');
+            return existsSync(f) && !getEnv(readFileSync(f, 'utf8'), 'METRICS_TOKEN');
+          }),
+        apply: (ctx) => {
+          for (const d of [join('apps', 'api'), ...serviceDirs(ctx).map((s) => join('apps', s.dir))]) {
+            const f = join(ctx.root, d, '.env');
+            if (existsSync(f) && !getEnv(readFileSync(f, 'utf8'), 'METRICS_TOKEN')) ctx.edit(f, (t) => setEnv(t, 'METRICS_TOKEN', secret(24)));
+          }
+        },
+      },
+      {
+        title: 'Review runtime switches that change behaviour (not applied automatically)',
+        // Informational. Turning these on before `php artisan migrate` would break consumers, so they are reported, not set.
+        needed: (ctx) => serviceDirs(ctx).length > 0,
+        apply: (ctx) =>
+          ctx.warn(
+            '1.1 adds tables (inbox_events, saga_instances) and outbox columns: run "php artisan migrate" in every service FIRST, ' +
+              'then set KAFKA_INBOX_ENABLED=true (transactional idempotency), LOG_CHANNEL=nestlaravel (structured logs) and, once every ' +
+              'event has a schema, KAFKA_SCHEMA_ENFORCE_PRODUCER/CONSUMER=true. Then run "nestlaravel production:check". See UPGRADING.md § 1.1.0.',
+          ),
+      },
+    ],
+  },
 ];
 
 export { writeIfAbsent, editFile, toEnvName };

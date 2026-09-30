@@ -182,10 +182,8 @@ class OverheadBenchmarkTest extends ReliabilityTestCase
         config(['logging.default' => 'null']);
         $this->measure('consumer.inbox_duplicate_skipped_no_log_io', 2000, fn () => null, fn () => $pipeline->process($m, $handler));
 
-        $inbox = $this->app->make(\NestLaravel\Kafka\Inbox\EventInbox::class);
-        $inbox->process('direct-1', fn () => null);
-        $this->measure('inbox.process_duplicate_direct_no_log_io', 2000, fn () => null, fn () => $inbox->process('direct-1', fn () => null));
-        $this->measure('inbox.process_new_event_direct_no_log_io', 2000, fn () => DB::table('inbox_events')->where('event_id', 'like', 'n-%')->delete(), fn ($i) => $inbox->process("n-$i", fn () => null));
+        $ctx = ['consumer' => 'bench', 'event_id' => 'e-1', 'event_type' => 'orders.order.created', 'correlation_id' => 'c-1'];
+        $this->measure('log.info_call_null_channel', 2000, fn () => null, fn () => \Illuminate\Support\Facades\Log::info('Duplicate event skipped by inbox', $ctx));
 
         config(['logging.default' => 'single']);
         $this->measure('consumer.inbox_duplicate_skipped_with_file_log', 500, fn () => null, fn () => $pipeline->process($m, $handler), rounds: 3);
@@ -204,6 +202,11 @@ class OverheadBenchmarkTest extends ReliabilityTestCase
 
             return $this->measure($enforce ? 'publish.schema_enforced' : 'publish.no_schema', 2000, fn () => OutboxMessage::query()->delete(), fn ($i) => $bus->publish(new BenchOrderCreated("o$i")));
         };
+
+        // The validation itself, in isolation (the publish numbers below are dominated by the DB insert and noise).
+        $schema = BenchOrderCreated::eventSchema();
+        $payload = (new BenchOrderCreated('o1'))->payload();
+        $this->measure('schema.validate_payload_isolated', 20000, fn () => null, fn () => $schema->validate($payload));
 
         $off = $run(false);
         $on = $run(true);

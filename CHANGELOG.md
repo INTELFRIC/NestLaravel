@@ -5,6 +5,51 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+## [1.1.0] — production hardening & reliability
+
+Additive and backward compatible: every new behaviour that could change a running system is **opt-in** (see
+[UPGRADING.md § 1.1.0](UPGRADING.md#110--production-hardening--reliability)). What is proven and what is not:
+[RELIABILITY.md](RELIABILITY.md) (guarantees ↔ tests) and [RELIABILITY-AUDIT.md](RELIABILITY-AUDIT.md) (before/after).
+
+### Added
+- **Transactional inbox** (`EventInbox::process($eventId, $handler)`, table `inbox_events`, `kafka.inbox.enabled`): dedup record and
+  business writes commit or roll back together; `inbox:prune`.
+- **Concurrency-safe outbox**: statuses pending/processing/published/failed, atomic claim (no double publish), exponential backoff,
+  stale-claim recovery, `last_error`, DLQ copy on permanent failure, metrics; `outbox:status [--failed] [--requeue]`.
+- **Consumer failure handling**: error classification (transient / fatal / poison), never acknowledges before success, DLQ failure ⇒
+  no commit, commit failure tolerated, backoff on broker errors, graceful SIGTERM.
+- **Event schema governance**: `EventSchema` / `EventSchemaRegistry`, `HasEventSchema`, `events:list`, `events:check` (compatibility
+  gate), envelope fields `event_version`, `causation_id`, `traceparent`, `tenant_id`;
+  `nestlaravel generate event <type> --service <svc> [--version N]`.
+- **Sagas**: `Saga::define()->step()->compensate()`, persisted state, idempotent start/resume, timeouts, retries, reverse
+  compensation, `saga:recover` ([SAGA.md](SAGA.md)).
+- **Observability**: JSON log channel `nestlaravel` with correlation/trace/tenant ids and secret redaction, Prometheus `/metrics`
+  (bearer token, fail closed), W3C trace propagation, optional OTLP export ([OBSERVABILITY.md](OBSERVABILITY.md)).
+- **Health**: `/liveness`, `/startup`, `/readiness`, `/health`; liveness never depends on Kafka/DB/Redis; readiness only on
+  `HEALTH_REQUIRED` (default database).
+- **Resilience** (gateway → service): connect + total timeouts, retry policy with error classification (only safe or
+  `Idempotency-Key` requests), shared-cache circuit breaker, 502/503/504 mapping without internal details.
+- **Security**: HMAC secret rotation without downtime (`INTERNAL_SERVICE_SECRET_PREVIOUS`), replay protection fails closed when the
+  nonce store is down.
+- **Degraded modes**: `SafeCache`, `Transactions::idempotent/once`, per-session DB statement timeout.
+- **Tenancy**: tenant id in every log line, strict mode for tenant-less jobs, `tenant:check` audit.
+- **CLI**: `production:check` (PASS/WARN/FAIL, exit 1 on FAIL, never says "production ready"), `events:list|check`, `kafka:health`,
+  `outbox:status`, `dlq:list`, `tenant:check`, `generate event`, `doctor` inspects workspace apps and pcntl.
+- **Operations**: Kubernetes reference manifests (`infrastructure/k8s`, validated in CI), `stop_grace_period`, runbook,
+  disaster-recovery and failure-scenario guides, a checkout **reference application** ([REFERENCE-APP.md](REFERENCE-APP.md)) and
+  opt-in overhead benchmarks ([BENCHMARKS.md](BENCHMARKS.md)).
+- **CI**: multi-process inbox concurrency on real PostgreSQL and MySQL, graceful-shutdown tests with pcntl on Linux,
+  manifest validation.
+- `nestlaravel update` migration `1.1.0`.
+
+### Changed
+- Consumer idempotency uses the inbox when `KAFKA_INBOX_ENABLED=true` (default `false` = the 1.0 cache check, unchanged).
+- `docker-compose.yml` uses the structured log channel, enables the inbox and sets `stop_grace_period: 40s`.
+
+### Fixed
+- Two outbox publishers could publish the same row; the cache-based idempotency check was not atomic with the business
+  transaction (duplicate effects after a crash, cache flush or concurrent duplicate).
+
 ## [1.0.0] — first public release
 
 ### Added

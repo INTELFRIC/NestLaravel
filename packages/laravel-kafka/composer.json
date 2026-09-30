@@ -26,6 +26,13 @@
             "NestLaravel\\Kafka\\Tests\\": "tests/"
         }
     },
+    "scripts": {
+        "test": "phpunit",
+        "bench": [
+            "@putenv NL_BENCH=1",
+            "phpunit tests/Benchmarks/OverheadBenchmarkTest.php"
+        ]
+    },
     "extra": {
         "laravel": {
             "providers": [

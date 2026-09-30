@@ -34,6 +34,10 @@ private network as defence in depth.
 | Secrets | none in source; `.env` git-ignored, excluded from Docker context and the npm package; `create` generates unique `APP_KEY`, DB, Redis and per-service signing secrets |
 | Errors | `APP_DEBUG=false` by default; 5xx bodies are generic; health output omits broker addresses |
 | Kafka | TLS/SASL settings, `acks=all` + idempotence, manual commits, DLQ, schema-version guard (see KAFKA.md) |
+| Replay / rotation | signature timestamp + single-use nonce; secret rotation without downtime; fail closed when the nonce store is unavailable (1.1) |
+| Logging | key- and value-based redaction (passwords, tokens, Authorization/Bearer, cookies, private keys, card numbers…); correlation/tenant ids on every line. Redaction is heuristic: never log secrets in free text (1.1) |
+| Ops endpoints | `/metrics` bearer-token protected and disabled without a token; health output contains no addresses or secrets (1.1) |
+| Tenancy | tenant id travels through jobs, events and logs; `TENANCY_STRICT_JOBS`; `tenant:check` audit (1.1) |
 | Containers | pinned images, infra ports on `127.0.0.1`, Redis `requirepass`, Postgres role+database per service, `server_tokens off` |
 | Supply chain | `composer audit` / `npm audit` in CI; npm publish with provenance; template secret-scan blocks release |
 
@@ -46,8 +50,13 @@ private network as defence in depth.
 * [ ] Kafka: `sasl_ssl`, per-service principals, least-privilege ACLs (WRITE own topics, READ consumed topics + group),
       `auto.create.topics.enable=false`, replication ≥ 3.
 * [ ] Postgres: per-service role/DB (generated), TLS, no superuser in app config; Redis: password + TLS or private net.
-* [ ] Rotate `<NAME>_SERVICE_SECRET` by setting the new value on the service first, then the gateway (brief 401s), or
-      run both during a maintenance window; rotate on personnel change.
+* [ ] Rotate `<NAME>_SERVICE_SECRET` **without downtime** (1.1+): on the service set `INTERNAL_SERVICE_SECRET=<new>` and
+      `INTERNAL_SERVICE_SECRET_PREVIOUS=<old>` (both verify), then switch the gateway to `<new>`, then remove
+      `INTERNAL_SERVICE_SECRET_PREVIOUS`. `nestlaravel production:check` warns while a rotation is pending. Rotate on personnel change.
+* [ ] `/metrics` is disabled (404) until `METRICS_TOKEN` is set; keep the scraper on the private network.
+* [ ] Shared, monitored `CACHE_STORE` (Redis) for nonces/breakers/rate limits. If it is down, services answer **503** rather than
+      accept unverifiable requests (`INTERNAL_REPLAY_PROTECTION_REQUIRED=true`, the default).
+* [ ] Run `nestlaravel production:check` in your pipeline against the production configuration (exit 1 on FAIL).
 * [ ] `composer audit` and `npm audit` clean in CI; dependabot/renovate on.
 * [ ] Portals: prefer an httpOnly-cookie BFF over `localStorage` bearer tokens (XSS can read `localStorage`).
 
@@ -60,4 +69,6 @@ services (Critical, fixed with signed service auth), outbox marked messages publ
 updated), default credentials in Compose files (Medium, removed).
 
 Known limitations: no rate limit on service-to-service traffic beyond the gateway's; portals still use
-`localStorage`; single outbox publisher per service; metrics endpoint not included (use your APM/OTel agent).
+`localStorage`; one outbox publisher per service recommended for strict per-aggregate ordering (several are safe against
+double publishing); Kafka ACLs, TLS certificate rotation, backups and network policy are operator responsibilities that
+`production:check` can only remind you about ([RELIABILITY.md](RELIABILITY.md#remaining-risks)).

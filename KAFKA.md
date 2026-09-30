@@ -22,7 +22,10 @@ DB::transaction(function () use ($order, $events) {
    `KAFKA_OUTBOX_MAX_ATTEMPTS`, then dead-lettered (`<topic>.dlq`) and marked `failed`.
 
 Producer defaults: `acks=all`, `enable.idempotence=true`, `compression=lz4`, delivery timeout 30 s.
-Run **one** outbox publisher per service. Delivery is at-least-once; consumers deduplicate.
+Run **one** outbox publisher per service for strict per-aggregate ordering. Since 1.1 several publishers are *safe*: rows are
+claimed atomically (`pending → processing`), so none is published twice by racing publishers; a crashed publisher's claim expires
+after `KAFKA_OUTBOX_VISIBILITY_TIMEOUT` and the rows are retried with exponential backoff. Delivery is at-least-once; consumers
+deduplicate. Monitor with `nestlaravel outbox:status`. Details and tests: [RELIABILITY.md](RELIABILITY.md).
 
 ## Consuming
 
@@ -30,14 +33,23 @@ Run **one** outbox publisher per service. Delivery is at-least-once; consumers d
 php artisan kafka:consume orders.events "App\Modules\Payments\Infrastructure\Messaging\OrderCreatedHandler"
 ```
 
-Pipeline per message: deserialize → validate envelope → **schema version check** (`KAFKA_EVENT_MAX_VERSION`) →
-**idempotency check** (`event_id` per topic) → handler → remember → **commit offset**.
+Pipeline per message: deserialize → validate envelope → **schema version check** (`KAFKA_EVENT_MAX_VERSION`) → validate the
+payload against the registered **schema** → **idempotency** → handler → **commit offset**.
+
+Idempotency has two modes. With `KAFKA_INBOX_ENABLED=true` (recommended; needs `php artisan migrate`) the handler runs inside a
+database transaction together with an `INSERT` into `inbox_events` (unique per consumer group + `event_id`): a duplicate is
+skipped, a failure rolls back the handler's writes *and* the dedup record, and a crash between the database commit and the
+offset commit cannot repeat the business effect. The default (`false`, the 1.0 behaviour) is a cache check that is **not** atomic
+with your database; see [RELIABILITY.md](RELIABILITY.md). Use `EventInbox::process($eventId, $fn)` directly for other entry points.
 
 | Situation | Behaviour |
 |-----------|-----------|
 | Handler throws (transient) | retried `KAFKA_CONSUMER_MAX_RETRIES` times with exponential backoff, then → `<topic>.dlq` |
 | Malformed JSON / missing fields / newer schema version (*poison*) | straight to the DLQ, no retries |
-| Duplicate delivery | skipped (idempotency store: the app cache — use Redis in production) |
+| Duplicate delivery | skipped (inbox table, or the app cache in the default 1.0 mode — use Redis in production) |
+| Payload violates its registered schema / unsupported `event_version` | straight to the DLQ (with `KAFKA_SCHEMA_ENFORCE_CONSUMER=true`) |
+| Broker unreachable / network flap | exponential backoff, consumer keeps running; auth/TLS errors exit 1 |
+| Offset commit fails | counted and logged; the message is redelivered and deduplicated |
 | DLQ publish itself fails | exception; **offset is not committed** → message is redelivered, never lost |
 | SIGTERM/SIGINT | current message finishes, offset committed, consumer leaves the group (fast rebalance) |
 
@@ -49,8 +61,14 @@ Consumer groups default to the service name (`KAFKA_GROUP_ID`); scale by running
 
 ```bash
 npx nestlaravel generate kafka-topic order-events --service orders --create   # + order-events.dlq
-npx nestlaravel generate kafka-event order.created --service orders --consumer
+npx nestlaravel generate event order.created --service orders --version 1     # schema-governed (recommended)
+npx nestlaravel generate kafka-event order.created --service orders --consumer  # plain event (+ handler)
+php artisan events:list && php artisan events:check                             # registry + compatibility gate
 ```
+
+`generate event` creates the event class with an `EventSchema` (Laravel validation rules) and registers it in `config/kafka.php`.
+A new **version** is a new class (`OrderCreatedV2`) next to the old one: published versions are immutable. `events:check` fails when
+a version *newly requires* a field the previous version did not guarantee.
 
 * Events route to `topics[<aggregate_type>]`, else to `KAFKA_TOPIC_DEFAULT` (`<service>.events`).
 * Naming: `<domain>.<entity>.<action>` past tense (`orders.order.created`). One topic per domain, DLQ = `<topic>.dlq`.

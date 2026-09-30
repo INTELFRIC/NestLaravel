@@ -14,6 +14,7 @@ use NestLaravel\Kafka\Outbox\OutboxMessage;
 use NestLaravel\Kafka\Outbox\OutboxPublisher;
 use NestLaravel\Kafka\Tests\ReliabilityTestCase;
 use NestLaravel\Kafka\Tests\Support\FakeProducer;
+use NestLaravel\Kafka\Tests\Support\InMemoryBroker;
 use RuntimeException;
 
 /** Captures what it was asked to do so scenarios can assert business effects. */
@@ -28,85 +29,6 @@ final class ChargePaymentHandler implements MessageHandler
         if (self::$beforeCommit) {
             (self::$beforeCommit)();
         }
-    }
-}
-
-/** Broker whose log survives across "process restarts": a topic is a list, each consumer group has a committed offset. */
-final class InMemoryBroker
-{
-    /** @var list<KafkaMessage> */
-    public array $log = [];
-
-    public int $committed = 0;
-
-    public bool $down = false;
-
-    public function producer(): KafkaProducer
-    {
-        $broker = $this;
-
-        return new class($broker) implements KafkaProducer
-        {
-            private array $pending = [];
-
-            public function __construct(private InMemoryBroker $broker) {}
-
-            public function produce(KafkaMessage $message): void
-            {
-                if ($this->broker->down) {
-                    throw new RuntimeException('broker unavailable');
-                }
-                $this->pending[] = $message;
-            }
-
-            public function produceMany(array $messages): void { array_map($this->produce(...), $messages); }
-
-            public function flush(int $timeoutMs = 1000): void
-            {
-                if ($this->broker->down) {
-                    $this->pending = [];
-                    throw new RuntimeException('delivery failed');
-                }
-                array_push($this->broker->log, ...$this->pending);
-                $this->pending = [];
-            }
-        };
-    }
-
-    public function consumer(): KafkaConsumer
-    {
-        $broker = $this;
-
-        return new class($broker) implements KafkaConsumer
-        {
-            private int $position;
-
-            public function __construct(private InMemoryBroker $broker)
-            {
-                $this->position = $broker->committed;   // a (re)started consumer resumes from the last COMMITTED offset
-            }
-
-            private array $topics = [];
-
-            public function subscribe(array $topics): void { $this->topics = $topics; }
-
-            public function consume(int $timeoutMs = 1000): ?KafkaMessage
-            {
-                // Like a real consumer: only messages of subscribed topics are delivered (other topics — e.g. the DLQ — are skipped).
-                while (($m = $this->broker->log[$this->position] ?? null) !== null) {
-                    $this->position++;
-                    if ($this->topics === [] || in_array($m->topic, $this->topics, true)) {
-                        return new KafkaMessage($m->topic, $m->key, $m->value, $m->headers, 0, $this->position - 1);
-                    }
-                }
-
-                return null;
-            }
-
-            public function acknowledge(KafkaMessage $message): void { $this->broker->committed = $message->offset + 1; }
-
-            public function close(): void {}
-        };
     }
 }
 
@@ -159,14 +81,14 @@ class ChaosScenariosTest extends ReliabilityTestCase
         $this->app->forgetInstance(ConsumerPipeline::class);
         $this->assertTrue($this->app->make(ConsumerPipeline::class)->process($message, new ChargePaymentHandler));
         // (no acknowledge(): the process was killed here)
-        $this->assertSame(0, $this->broker->committed);
+        $this->assertSame(0, $this->broker->committed());
         $this->assertSame(1, DB::table('payments')->count());
 
         // Restart: Kafka redelivers from the last committed offset.
         $this->assertSame(0, $this->drain());
 
         $this->assertSame(1, DB::table('payments')->count(), 'event was delivered again, inbox detected the duplicate, no second payment');
-        $this->assertSame(1, $this->broker->committed, 'and the offset is now committed');
+        $this->assertSame(1, $this->broker->committed(), 'and the offset is now committed');
     }
 
     public function test_kafka_broker_outage_and_restart_no_event_is_lost_and_none_duplicated(): void
@@ -249,7 +171,7 @@ class ChaosScenariosTest extends ReliabilityTestCase
             $this->app->make(ConsumerPipeline::class)->process($m, new ChargePaymentHandler);
             $consumer->acknowledge($m);
         }
-        $this->assertSame(2, $this->broker->committed);
+        $this->assertSame(2, $this->broker->committed());
 
         $this->assertSame(0, $this->drain());           // restart
 

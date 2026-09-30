@@ -33,6 +33,7 @@ export function managedMap(tplDir, services) {
   }
   addTree('workspace/infrastructure/docker', 'infrastructure/docker');
   addTree('workspace/infrastructure/scripts', 'infrastructure/scripts');
+  addTree('workspace/infrastructure/k8s', 'infrastructure/k8s');
 
   for (const service of services) {
     for (const rel of ['app/Http/Middleware/VerifyGatewaySignature.php', 'config/internal.php']) {

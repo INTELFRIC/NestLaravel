@@ -3,6 +3,8 @@
     <testsuites>
         <testsuite name="Kafka kit">
             <directory>tests</directory>
+            <!-- Opt-in overhead measurements, run by path: composer bench -->
+            <exclude>tests/Benchmarks</exclude>
         </testsuite>
     </testsuites>
 </phpunit>
