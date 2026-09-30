@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { editFile, ensureDir, writeIfAbsent } from '../fsx.js';
 import { run } from '../exec.js';
@@ -173,11 +173,18 @@ export async function generateKafkaTopic(root, rawName, flags) {
     throw new CliError(`Invalid topic name "${rawName}". Use lowercase letters, digits, ".", "_" or "-" (e.g. "user-events").`);
   }
   const target = resolveTarget(root, flags.service);
-  const key = topic.replace(/\.events?$/, '').replace(/[-.]/g, '_');
+  const key = topic.replace(/[-.]events?$/, '').replace(/[-.]/g, '_');
   const envKey = `KAFKA_TOPIC_${toEnvName(key)}`;
 
   const configPath = join(target.appDir, 'config', 'kafka.php');
-  if (!existsSync(configPath)) throw new CliError(`apps/${target.dir}/config/kafka.php not found.`);
+  if (!existsSync(configPath)) {
+    // Services use the shared kit's defaults via mergeConfigFrom; publish them once so topics can be edited.
+    const kit = join(root, 'packages', 'laravel-kafka', 'config', 'kafka.php');
+    if (target.isGateway || !existsSync(kit)) throw new CliError(`apps/${target.dir}/config/kafka.php not found.`);
+    ensureDir(join(target.appDir, 'config'));
+    copyFileSync(kit, configPath);
+    log.info(`Published the Kafka kit config to apps/${target.dir}/config/kafka.php`);
+  }
 
   const changed = editFile(configPath, (text) => {
     if (text.includes(`'${key}' =>`)) return text;

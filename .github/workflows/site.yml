@@ -1,0 +1,50 @@
+name: Deploy website
+
+# Builds the developer portal and publishes website/dist to the live server over SSH.
+# Runs only on pushes to main that touch the site or the docs it is generated from (never on pull requests).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'docs/**'
+      - '*.md'
+      - 'packages/cli/src/versions.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-website
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production-site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Build
+        run: node website/build.mjs
+      - name: Install SSH key (from repository secrets)
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Publish (rsync; keeps .well-known and cgi-bin)
+        run: |
+          rsync -az --delete \
+            --exclude '.well-known' --exclude 'cgi-bin' \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} -o BatchMode=yes -o StrictHostKeyChecking=yes" \
+            website/dist/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_TARGET_DIR }}/"
+      - name: Smoke test
+        run: |
+          curl -fsS --resolve "nestlaravel.intelfric.com:443:${{ secrets.SSH_HOST }}" https://nestlaravel.intelfric.com/ -o /dev/null -k || \
+          curl -fsS https://nestlaravel.intelfric.com/ -o /dev/null
+      - name: Remove key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

@@ -174,14 +174,22 @@ class MakeMicroserviceCommand extends Command
                 $this->files->deleteDirectory($to);
             }
 
-            $this->files->moveDirectory($from, $to);
+            // A plain rename can fail on Windows while antivirus/indexers hold the freshly copied files;
+            // fall back to copy + delete so scaffolding never silently leaves the template module name.
+            if (! $this->files->moveDirectory($from, $to)) {
+                $this->files->copyDirectory($from, $to);
+                $this->files->deleteDirectory($from);
+            }
         }
 
         $oldProvider = $to.DIRECTORY_SEPARATOR.'Infrastructure'.DIRECTORY_SEPARATOR.'Providers'.DIRECTORY_SEPARATOR.'OrdersServiceProvider.php';
         $newProvider = $to.DIRECTORY_SEPARATOR.'Infrastructure'.DIRECTORY_SEPARATOR.'Providers'.DIRECTORY_SEPARATOR.$module.'ServiceProvider.php';
 
         if ($this->files->exists($oldProvider) && $oldProvider !== $newProvider) {
-            $this->files->move($oldProvider, $newProvider);
+            if (! @$this->files->move($oldProvider, $newProvider)) {
+                $this->files->copy($oldProvider, $newProvider);
+                $this->files->delete($oldProvider);
+            }
         }
     }
 

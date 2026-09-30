@@ -97,9 +97,9 @@ test('generate kafka-topic registers the topic once and adds the env var', async
   await generateKafkaTopic(root, 'user-events', { service: 'orders' });
   await generateKafkaTopic(root, 'user-events', { service: 'orders' });
   const cfg = readFileSync(join(app, 'config/kafka.php'), 'utf8');
-  assert.equal(cfg.match(/'user_events' =>/g).length, 1);
-  assert.match(cfg, /env\('KAFKA_TOPIC_USER_EVENTS', 'user-events'\)/);
-  assert.match(readFileSync(join(app, '.env.example'), 'utf8'), /KAFKA_TOPIC_USER_EVENTS=user-events/);
+  assert.equal(cfg.match(/'user' =>/g).length, 1, 'suffix "-events" is dropped: aggregate_type "user" routes here');
+  assert.match(cfg, /env\('KAFKA_TOPIC_USER', 'user-events'\)/);
+  assert.match(readFileSync(join(app, '.env.example'), 'utf8'), /KAFKA_TOPIC_USER=user-events/);
   await assert.rejects(() => generateKafkaTopic(root, 'Bad Topic!', { service: 'orders' }), /Invalid topic/);
 });
 
