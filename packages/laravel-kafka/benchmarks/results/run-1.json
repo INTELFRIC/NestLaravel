@@ -1,0 +1,100 @@
+{
+    "php": "8.4.12",
+    "os": "Windows",
+    "sqlite": "3.49.2",
+    "date": "2026-09-30T14:28:22+00:00",
+    "results": {
+        "consumer.cache_idempotency": {
+            "ops_per_sec": 5018.2,
+            "us_per_op": 199.28,
+            "n": 2000
+        },
+        "consumer.transactional_inbox": {
+            "ops_per_sec": 4627.2,
+            "us_per_op": 216.11,
+            "n": 2000
+        },
+        "consumer.inbox_overhead_us_per_msg": {
+            "value": 16.83
+        },
+        "consumer.inbox_duplicate_skipped_no_log_io": {
+            "ops_per_sec": 2449.5,
+            "us_per_op": 408.25,
+            "n": 2000
+        },
+        "log.info_call_null_channel": {
+            "ops_per_sec": 47981.8,
+            "us_per_op": 20.84,
+            "n": 2000
+        },
+        "consumer.inbox_duplicate_skipped_with_file_log": {
+            "ops_per_sec": 1410.3,
+            "us_per_op": 709.08,
+            "n": 500
+        },
+        "schema.validate_payload_isolated": {
+            "ops_per_sec": 9959.6,
+            "us_per_op": 100.41,
+            "n": 20000
+        },
+        "publish.without_schema": {
+            "ops_per_sec": 2229.7,
+            "us_per_op": 448.5,
+            "n": 2000
+        },
+        "publish.with_schema_validation": {
+            "ops_per_sec": 1674.7,
+            "us_per_op": 597.13,
+            "n": 2000
+        },
+        "publish.schema_validation_overhead_us_per_event": {
+            "value": 148.63
+        },
+        "outbox.drain_rows_per_sec_batch_100": {
+            "value": 1649.9,
+            "rows": 2000
+        },
+        "outbox.drain_rows_per_sec_batch_500": {
+            "value": 1761.4,
+            "rows": 2000
+        },
+        "obs.metrics_inc": {
+            "ops_per_sec": 30838.9,
+            "us_per_op": 32.43,
+            "n": 20000
+        },
+        "obs.metrics_inc_disabled": {
+            "ops_per_sec": 330250.4,
+            "us_per_op": 3.03,
+            "n": 20000
+        },
+        "obs.redact_context": {
+            "ops_per_sec": 220260.2,
+            "us_per_op": 4.54,
+            "n": 20000
+        },
+        "obs.json_log_line": {
+            "ops_per_sec": 170647.2,
+            "us_per_op": 5.86,
+            "n": 20000
+        },
+        "obs.traceparent_continue_and_child": {
+            "ops_per_sec": 583740.5,
+            "us_per_op": 1.71,
+            "n": 20000
+        },
+        "http.handler_only": {
+            "ops_per_sec": 42848.8,
+            "us_per_op": 23.34,
+            "n": 5000
+        },
+        "http.handler_with_observe_middleware": {
+            "ops_per_sec": 6627.6,
+            "us_per_op": 150.89,
+            "n": 5000
+        },
+        "http.observability_overhead_us_per_request": {
+            "value": 127.55
+        }
+    }
+}

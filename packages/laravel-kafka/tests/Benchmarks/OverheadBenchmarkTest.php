@@ -47,6 +47,23 @@ final class BenchOrderCreated extends AbstractDomainEvent implements HasEventSch
     public function payload(): array { return ['id' => $this->id, 'total' => 42.5, 'currency' => 'EUR']; }
 }
 
+/** Same event without a schema: nothing is validated on publish. */
+final class BenchPlainOrderCreated extends AbstractDomainEvent
+{
+    public function __construct(private readonly string $id)
+    {
+        parent::__construct();
+    }
+
+    public function eventType(): string { return 'bench.plain.created'; }
+
+    public function aggregateId(): string { return $this->id; }
+
+    public function aggregateType(): string { return 'order'; }
+
+    public function payload(): array { return ['id' => $this->id, 'total' => 42.5, 'currency' => 'EUR']; }
+}
+
 final class BenchInsertHandler implements MessageHandler
 {
     public function handle(array $event): void
@@ -194,13 +211,14 @@ class OverheadBenchmarkTest extends ReliabilityTestCase
     {
         fwrite(STDERR, "\nPublish (outbox insert) with and without schema enforcement\n");
         $run = function (bool $enforce): array {
-            // "off" = no schema registered at all; "on" = schema registered and enforced.
-            config(['kafka.events' => $enforce ? [BenchOrderCreated::class] : [], 'kafka.schema.enforce_producer' => $enforce]);
+            // Any event implementing HasEventSchema is validated on publish; the flag only decides whether events
+            // WITHOUT a schema are refused. So "off" publishes a schema-less event, "on" a schema event.
+            config(['kafka.events' => [], 'kafka.schema.enforce_producer' => false]);
             $this->app->forgetInstance(EventSchemaRegistry::class);
             $this->app->forgetInstance(EventBus::class);
             $bus = $this->app->make(EventBus::class);
 
-            return $this->measure($enforce ? 'publish.schema_enforced' : 'publish.no_schema', 2000, fn () => OutboxMessage::query()->delete(), fn ($i) => $bus->publish(new BenchOrderCreated("o$i")));
+            return $this->measure($enforce ? 'publish.with_schema_validation' : 'publish.without_schema', 2000, fn () => OutboxMessage::query()->delete(), fn ($i) => $bus->publish($enforce ? new BenchOrderCreated("o$i") : new BenchPlainOrderCreated("o$i")));
         };
 
         // The validation itself, in isolation (the publish numbers below are dominated by the DB insert and noise).
@@ -210,7 +228,7 @@ class OverheadBenchmarkTest extends ReliabilityTestCase
 
         $off = $run(false);
         $on = $run(true);
-        self::$results['publish.schema_overhead_us_per_event'] = ['value' => round($on['us_per_op'] - $off['us_per_op'], 2)];
+        self::$results['publish.schema_validation_overhead_us_per_event'] = ['value' => round($on['us_per_op'] - $off['us_per_op'], 2)];
         fwrite(STDERR, sprintf("  → schema validation overhead: %+.2f µs/event\n", $on['us_per_op'] - $off['us_per_op']));
     }
 
