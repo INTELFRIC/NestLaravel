@@ -33,6 +33,8 @@ $capsule->addConnection([
     'prefix' => '',
 ]);
 
+$capsule->setAsGlobal();   // Capsule::table() below needs the static instance
+
 $app = new Container;
 Container::setInstance($app);
 $app->instance('db', $capsule->getDatabaseManager());

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class OperationsTest extends TestCase
@@ -31,7 +32,7 @@ class OperationsTest extends TestCase
     public function test_the_reliability_tables_are_migrated(): void
     {
         foreach (['outbox_messages', 'inbox_events', 'saga_instances'] as $table) {
-            $this->assertTrue(\Illuminate\Support\Facades\Schema::hasTable($table), $table);
+            $this->assertTrue(Schema::hasTable($table), $table);
         }
     }
 }

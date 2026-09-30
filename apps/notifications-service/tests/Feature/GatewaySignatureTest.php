@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\VerifyGatewaySignature;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class GatewaySignatureTest extends TestCase
@@ -110,7 +112,7 @@ class GatewaySignatureTest extends TestCase
         $this->withHeaders(['X-Gateway-User' => '1'] + $this->signed('GET', $uri, nonce: 'tamper-user'))->get($uri, ['Accept' => 'application/json'])->assertStatus(401);
 
         // A route that accepts any method, guarded by the same middleware.
-        \Illuminate\Support\Facades\Route::any('/api/v1/notifications/echo', fn () => 'ok')->middleware(['api', \App\Http\Middleware\VerifyGatewaySignature::class]);
+        Route::any('/api/v1/notifications/echo', fn () => 'ok')->middleware(['api', VerifyGatewaySignature::class]);
         $echo = '/api/v1/notifications/echo';
 
         // Signature made for GET replayed as POST.

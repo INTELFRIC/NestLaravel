@@ -4,6 +4,7 @@ use App\Core\Exceptions\DomainException;
 use App\Core\Support\ApiResponse;
 use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\SecureHeaders;
+use App\Infrastructure\Gateway\GatewayUnavailableException;
 use App\Security\Authorization\Middleware\EnsurePermission;
 use Illuminate\Auth\Access\AuthorizationException as LaravelAuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -51,7 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 meta: ['error_code' => $e->errorCode()],
             );
 
-            if ($e instanceof \App\Infrastructure\Gateway\GatewayUnavailableException && $e->retryAfter !== null) {
+            if ($e instanceof GatewayUnavailableException && $e->retryAfter !== null) {
                 $response->headers->set('Retry-After', (string) $e->retryAfter);
             }
 
