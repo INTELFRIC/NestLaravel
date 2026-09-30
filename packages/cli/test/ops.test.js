@@ -203,3 +203,19 @@ test('managed sync covers every runtime directory of the kafka kit (routes/ops.p
   assert.ok(dests.includes('packages/laravel-kafka/routes/ops.php'));
   assert.ok(dests.includes('packages/laravel-kafka/src/A.php'));
 });
+
+test('every top-level entry the kafka kit ships is either synced by update or deliberately unmanaged', async () => {
+  const { readdirSync } = await import('node:fs');
+  const kit = join(import.meta.dirname, '../../laravel-kafka');
+  const unmanaged = new Set(['tests', 'vendor', 'benchmarks', 'composer.json', 'composer.lock', 'phpunit.xml', 'LICENSE', '.phpunit.cache']);
+  const tpl = mkdtempSync(join(tmpdir(), 'nl-tpl-all-'));
+  const shipped = readdirSync(kit, { withFileTypes: true }).filter((e) => e.isDirectory() && !unmanaged.has(e.name));
+  for (const dir of shipped) {
+    mkdirSync(join(tpl, 'workspace/packages/laravel-kafka', dir.name), { recursive: true });
+    writeFileSync(join(tpl, 'workspace/packages/laravel-kafka', dir.name, 'x.php'), '<?php');
+  }
+  const dests = managedMap(tpl, []).map((m) => m.to);
+  for (const dir of shipped) {
+    assert.ok(dests.includes(`packages/laravel-kafka/${dir.name}/x.php`), `update does not sync packages/laravel-kafka/${dir.name}/`);
+  }
+});
