@@ -9,8 +9,10 @@ use NestLaravel\Kafka\Console\OutboxPublishCommand;
 use NestLaravel\Kafka\Contracts\EventBus;
 use NestLaravel\Kafka\Contracts\IdempotencyStore;
 use NestLaravel\Kafka\Inbox\EventInbox;
+use NestLaravel\Kafka\Http\Middleware\ObserveRequest;
 use NestLaravel\Kafka\Observability\ContextProcessor;
 use NestLaravel\Kafka\Observability\JsonLogFormatter;
+use NestLaravel\Kafka\Observability\Metrics;
 use NestLaravel\Kafka\Outbox\OutboxPublisher;
 use NestLaravel\Kafka\Producers\DomainEventProducer;
 use NestLaravel\Kafka\Schema\EventSchemaRegistry;
@@ -121,9 +123,45 @@ final class KafkaServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
+        // Ops endpoints (/liveness /startup /readiness /health /metrics). Apps with their own health routes set
+        // `kafka.health.routes` = false (the API gateway does).
+        if (config('kafka.health.routes', true) && ! $this->app->routesAreCached()) {
+            \Illuminate\Support\Facades\Route::group([], __DIR__.'/../routes/ops.php');
+        }
+
+        // Request id / correlation id / trace context / RED metrics on every HTTP request (global middleware, so it
+        // also covers routes registered later and does not depend on middleware-group initialisation order).
+        if (config('kafka.observability.http', true) && $this->app->bound(\Illuminate\Contracts\Http\Kernel::class)) {
+            $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
+
+            if (method_exists($kernel, 'prependMiddleware')) {
+                $kernel->prependMiddleware(ObserveRequest::class);
+            }
+        }
+
+        $this->registerRuntimeMetrics();
+
         if ($this->app->runningInConsole()) {
             $this->publishes([__DIR__.'/../config/kafka.php' => config_path('kafka.php')], 'nestlaravel-kafka-config');
             $this->commands([OutboxPublishCommand::class, KafkaConsumeCommand::class]);
         }
+    }
+
+    /** Database query timing and queue job outcomes → metrics (cheap; disable with METRICS_ENABLED=false). */
+    private function registerRuntimeMetrics(): void
+    {
+        if (! config('kafka.metrics.enabled', true)) {
+            return;
+        }
+
+        if (config('kafka.metrics.db_queries', true)) {
+            $this->app['db']->listen(static function ($query): void {
+                Metrics::observe('nestlaravel_db_query_duration_seconds', $query->time / 1000, ['connection' => $query->connectionName], 'Database query duration');
+            });
+        }
+
+        $events = $this->app['events'];
+        $events->listen(\Illuminate\Queue\Events\JobProcessed::class, static fn ($e) => Metrics::inc('nestlaravel_jobs_total', ['queue' => (string) $e->job->getQueue(), 'result' => 'processed'], help: 'Queue jobs by result'));
+        $events->listen(\Illuminate\Queue\Events\JobFailed::class, static fn ($e) => Metrics::inc('nestlaravel_jobs_total', ['queue' => (string) $e->job->getQueue(), 'result' => 'failed'], help: 'Queue jobs by result'));
     }
 }
