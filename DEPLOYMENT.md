@@ -63,7 +63,9 @@ Ingress → gateway only. Run migrations as a `Job` (Helm pre-upgrade hook).
 ## Publishing NestLaravel itself
 
 Automated by `.github/workflows/release.yml` (tests → audit → build → clean-install test → package validation →
-version → tag → GitHub release → `npm publish --provenance`). Manual equivalent:
+version → `npm publish --provenance` → tag → GitHub release). Bump the version and CHANGELOG, commit, then
+`git tag vX.Y.Z && git push origin vX.Y.Z`. Each step skips what is already done, so a failed run can be re-run, and a
+tag for a version already published by hand only adds the GitHub release. Manual equivalent:
 
 ```bash
 cd packages/cli
@@ -71,9 +73,11 @@ npm run build:templates && npm run verify:package     # secret scan + tarball al
 npm version 1.0.0 --no-git-tag-version                 # or minor/patch; update CHANGELOG.md first
 npm pack                                               # inspect the tarball
 npm login                                              # once (2FA)
-npm publish --access public --provenance               # provenance needs GitHub Actions OIDC; drop it locally
+npm publish --access public                            # CI adds --provenance (needs GitHub Actions OIDC)
 git tag v1.0.0 && git push --tags && gh release create v1.0.0 --notes-file ../../CHANGELOG.md
 ```
 
-Requirements: an npm account that owns the `nestlaravel` name (currently unclaimed on npm), an `NPM_TOKEN` (automation
-token) repository secret, and the `repository.url` in `packages/cli/package.json` pointing at your GitHub repo.
+Requirements: publish rights on the `nestlaravel` npm package, npm auth for CI — either a **trusted publisher** on
+npmjs.com (package → Settings → Trusted publisher → GitHub Actions, repository `INTELFRIC/NestLaravel`, workflow
+`release.yml`, environment `npm-publish`; no secret needed) or an `NPM_TOKEN` repository secret — and the
+`repository.url` in `packages/cli/package.json` pointing at your GitHub repo.

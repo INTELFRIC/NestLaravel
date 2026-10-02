@@ -1,8 +1,17 @@
 name: Release
 
 # Publishing happens ONLY after every validation job passes.
-#   1. tag push:           git tag v1.0.0 && git push --tags
+#   1. tag push:           git tag v1.2.0 && git push origin v1.2.0
 #   2. or manual dispatch: Actions → Release → Run workflow (input: version)
+#
+# npm auth (either one):
+#   - Trusted publishing (preferred, no secret): npmjs.com → nestlaravel → Settings → Trusted publisher →
+#     GitHub Actions, repository INTELFRIC/NestLaravel, workflow release.yml, environment npm-publish.
+#   - Or an NPM_TOKEN secret (granular token with publish rights on nestlaravel).
+#
+# Idempotent: npm publish runs before the GitHub release, and every step skips work that is already done
+# (version already on npm, tag or release already present). A failed run can simply be re-run, and a tag
+# pushed for a version that was published by hand only adds the missing GitHub release.
 on:
   push:
     tags: ['v*.*.*']
@@ -26,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.v.outputs.version }}
+      published: ${{ steps.v.outputs.published }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,8 +49,13 @@ jobs:
           [ "$PKG" = "$WANT" ] || { echo "packages/cli version $PKG != requested $WANT"; exit 1; }
           echo "$PKG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$' || { echo "not semver"; exit 1; }
           grep -q "## \[$PKG\]" CHANGELOG.md || { echo "CHANGELOG.md has no entry for $PKG"; exit 1; }
-          if npm view "nestlaravel@$PKG" version >/dev/null 2>&1; then echo "nestlaravel@$PKG already published"; exit 1; fi
           echo "version=$PKG" >> "$GITHUB_OUTPUT"
+          if npm view "nestlaravel@$PKG" version >/dev/null 2>&1; then
+            echo "::notice::nestlaravel@$PKG is already on npm — publish will be skipped, the GitHub release still created"
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
       - run: npm install --no-audit --no-fund
       - run: |
           npm run build:templates --workspace=nestlaravel
@@ -53,13 +68,13 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Tag, GitHub release, npm publish
+    name: npm publish, tag, GitHub release
     needs: package
     runs-on: ubuntu-latest
     environment: npm-publish          # protect with required reviewers in repo settings
     permissions:
       contents: write                 # tag + release
-      id-token: write                 # npm provenance
+      id-token: write                 # npm trusted publishing + provenance
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -68,6 +83,13 @@ jobs:
           registry-url: https://registry.npmjs.org
       - uses: actions/download-artifact@v4
         with: { name: nestlaravel-tarball }
+      - name: npm publish (with provenance)
+        if: needs.package.outputs.published != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm install -g npm@^11.5.1   # trusted publishing (OIDC) needs npm >= 11.5.1
+          npm publish nestlaravel-*.tgz --access public --provenance
       - name: Git tag
         run: |
           V="${{ needs.package.outputs.version }}"
@@ -79,9 +101,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           V="${{ needs.package.outputs.version }}"
+          if gh release view "v$V" >/dev/null 2>&1; then echo "Release v$V already exists"; exit 0; fi
           awk "/^## \\[$V\\]/{f=1;next} /^## \\[/{f=0} f" CHANGELOG.md > notes.md
           gh release create "v$V" nestlaravel-*.tgz --title "NestLaravel $V" --notes-file notes.md
-      - name: npm publish (with provenance)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish nestlaravel-*.tgz --access public --provenance

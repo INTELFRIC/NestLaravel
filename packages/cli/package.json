@@ -36,8 +36,7 @@
     "verify:package": "node scripts/verify-package.mjs"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "repository": {
     "type": "git",
