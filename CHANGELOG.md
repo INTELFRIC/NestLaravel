@@ -5,6 +5,15 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+## [1.2.1] — API docs page
+
+### Fixed
+
+- `/docs/api` rendered blank: the gateway's `SecureHeaders` CSP (`default-src 'self'`) blocked the Stoplight Elements
+  bundle from unpkg and the page's inline scripts/styles. The docs route now gets a policy that allows them; every other
+  response keeps the strict one. Existing workspaces: copy `apps/api/app/Http/Middleware/SecureHeaders.php` (not synced
+  by `nestlaravel update`).
+
 ## [1.2.0] — Postgres for new projects
 
 ### Added

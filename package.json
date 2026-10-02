@@ -1,6 +1,6 @@
 {
   "name": "@nestlaravel/source",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "NestLaravel framework source: Nx + Laravel microservices + Kafka, with the nestlaravel CLI",
   "scripts": {
