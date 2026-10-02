@@ -5,6 +5,8 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+## [1.2.0] — Postgres for new projects
+
 ### Added
 
 - `create --db pgsql --migrate` starts the project's Postgres container when Docker is running, on the next free port if
