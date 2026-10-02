@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { connect } from 'node:net';
 import { join, resolve } from 'node:path';
 import { parseArgs } from '../args.js';
 import { checkRequirements, printRequirements } from '../doctor.js';
@@ -11,6 +12,17 @@ import { validateName, writeManifest } from '../workspace.js';
 import { managedMap, recordManaged } from '../managed.js';
 
 const DB_CHOICES = ['sqlite', 'pgsql', 'mysql'];
+
+/** True when something accepts TCP connections on host:port within the timeout. */
+function canConnect(host, port, timeout = 2000) {
+  return new Promise((done) => {
+    const socket = connect({ host, port });
+    const finish = (ok) => { socket.destroy(); done(ok); };
+    socket.setTimeout(timeout, () => finish(false));
+    socket.once('connect', () => finish(true));
+    socket.once('error', () => finish(false));
+  });
+}
 
 export const CREATE_HELP = `
 Usage: nestlaravel create <name> [options]
@@ -47,7 +59,7 @@ export async function create(argv) {
   // 1-5. System requirements ---------------------------------------------------------------------
   if (!flags['skip-checks']) {
     log.step('Checking system requirements');
-    const failed = printRequirements(checkRequirements());
+    const failed = printRequirements(checkRequirements({ db }));
     if (failed.length) {
       throw new CliError(`Fix the ${failed.length} missing requirement(s) above and re-run (see "nestlaravel doctor").`);
     }
@@ -143,6 +155,16 @@ export async function create(argv) {
   if (flags.migrate && !flags['skip-install']) {
     log.step('Running migrations and seeding roles');
     const api = join(root, 'apps', 'api');
+    const port = db === 'pgsql' ? 5432 : 3306;
+    if (db !== 'sqlite' && !(await canConnect('127.0.0.1', port))) {
+      throw new CliError(
+        `Workspace created, but nothing is listening on 127.0.0.1:${port}, so migrations were not run.\n` +
+          (db === 'pgsql'
+            ? `  Start Postgres, then migrate:\n    cd ${name}\n    docker compose -f docker-compose.infra.yml up -d postgres\n`
+            : `  Start MySQL with database/user "app" and the DB_PASSWORD from apps/api/.env, then:\n    cd ${name}\n`) +
+          '    cd apps/api && php artisan migrate && php artisan db:seed --class="Database\\Seeders\\RolePermissionSeeder"',
+      );
+    }
     await run('php', ['artisan', 'migrate', '--force', '--no-interaction'], { cwd: api });
     await run('php', ['artisan', 'db:seed', '--class=Database\\Seeders\\RolePermissionSeeder', '--force'], { cwd: api });
   }

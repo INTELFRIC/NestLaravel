@@ -21,7 +21,7 @@ const firstVersion = (text) => text?.match(/(\d+\.\d+(?:\.\d+)?)/)?.[1] ?? null;
  * Inspect the machine. Every check returns { name, ok, required, version, message }.
  * `required: false` checks only warn.
  */
-export function checkRequirements({ needDocker = false } = {}) {
+export function checkRequirements({ needDocker = false, db = null } = {}) {
   const results = [];
   const add = (name, { version, min, required = true, missingHint, extra }) => {
     const found = version != null;
@@ -53,6 +53,26 @@ export function checkRequirements({ needDocker = false } = {}) {
       : { ok: true, message: phpVersion };
   }
   add('PHP', { version: phpVersion, min: RUNTIME.php.min, missingHint: 'Install PHP 8.3+ (https://www.php.net/downloads).', extra });
+
+  // The PDO driver for the chosen --db. Without it `artisan migrate` dies with "could not find driver".
+  if (db && phpVersion) {
+    const driver = `pdo_${db}`;
+    const loaded = (capture('php', ['-m']) ?? '').toLowerCase().split(/\r?\n/).includes(driver);
+    const ini = (capture('php', ['--ini']) ?? '').match(/Loaded Configuration File:\s*(.+)/)?.[1]?.trim();
+    const iniHint = ini && ini !== '(none)' ? ini : 'php.ini (see "php --ini")';
+    results.push({
+      name: `PHP ${db}`,
+      ok: loaded,
+      required: true,
+      version: loaded ? 'loaded' : null,
+      message: loaded
+        ? `${driver} loaded`
+        : `${driver} extension not loaded (needed for --db ${db}). ` +
+          (process.platform === 'win32'
+            ? `Uncomment "extension=${driver}"${db === 'pgsql' ? ' and "extension=pgsql"' : ''} in ${iniHint}.`
+            : `Install it (e.g. apt install php-${db === 'pgsql' ? 'pgsql' : db}) or choose another --db.`),
+    });
+  }
 
   add('Composer', {
     version: firstVersion(capture('composer', ['--version', '--no-ansi'])),
