@@ -5,6 +5,12 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+### Added
+
+- `create --db pgsql --migrate` starts the project's Postgres container when Docker is running, on the next free port if
+  5432 is taken (written to `POSTGRES_PORT` and the gateway's `DB_PORT`). Stops early if a Docker volume from an
+  earlier project of the same name would reject the new database password.
+
 ## [1.1.1] — install fixes
 
 ### Fixed

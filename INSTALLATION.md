@@ -29,6 +29,11 @@ cd my-project
 (`APP_KEY`, database/Redis passwords) → `composer install` (gateway) → `npm install` (Nx) → optional migrations +
 role seeding → `git init` → validation (`nx show projects`, gateway test suite) → next steps.
 
+`--db pgsql|mysql` requires the matching PHP driver (`pdo_pgsql` / `pdo_mysql`); the requirement check names the
+`php.ini` to edit when it is missing. With `--db pgsql --migrate` and Docker running, `create` starts the project's own
+Postgres container (`docker-compose.infra.yml`) before migrating; if port 5432 is taken it uses the next free port and
+writes it to `POSTGRES_PORT` (root `.env`) and `DB_PORT` (`apps/api/.env`). Without Docker, start a Postgres yourself.
+
 Options: `--db sqlite|pgsql|mysql`, `--with-portals`, `--migrate`, `--skip-install`, `--skip-git`, `--skip-validate`,
 `--skip-checks`, `-y`.
 

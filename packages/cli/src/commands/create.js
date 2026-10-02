@@ -24,6 +24,14 @@ function canConnect(host, port, timeout = 2000) {
   });
 }
 
+/** First port from `start` that nothing on 127.0.0.1 is listening on. */
+async function freePort(start, attempts = 20) {
+  for (let port = start; port < start + attempts; port++) {
+    if (!(await canConnect('127.0.0.1', port, 500))) return port;
+  }
+  throw new CliError(`No free port found in ${start}-${start + attempts - 1} for Postgres.`);
+}
+
 export const CREATE_HELP = `
 Usage: nestlaravel create <name> [options]
 
@@ -33,6 +41,7 @@ Options:
   --db <sqlite|pgsql|mysql>  Database for the gateway on the host (default: sqlite)
   --with-portals             Include the Next.js customer/admin portals
   --migrate                  Run migrations and seed roles after install
+                             (with --db pgsql and Docker running, starts the project's Postgres container first)
   --skip-install             Do not run composer/npm install
   --skip-git                 Do not run "git init"
   --skip-validate            Do not run the initial test run
@@ -64,6 +73,22 @@ export async function create(argv) {
       throw new CliError(`Fix the ${failed.length} missing requirement(s) above and re-run (see "nestlaravel doctor").`);
     }
     log.blank();
+  }
+
+  // --db pgsql --migrate with a running Docker daemon: the project's own Postgres container is started before
+  // migrating. Its host port must be free — another Postgres on 5432 would answer with the wrong credentials.
+  const dockerPostgres = db === 'pgsql' && flags.migrate && !flags['skip-install']
+    && capture('docker', ['info', '--format', '{{.ServerVersion}}'], { timeout: 8000 }) != null;
+  if (dockerPostgres) {
+    // A volume left by an earlier project of the same name keeps its old password (Postgres applies
+    // POSTGRES_PASSWORD only on first init), so migrating against it would fail authentication.
+    const volume = `${name}_postgres_data`;
+    if (capture('docker', ['volume', 'inspect', volume]) != null) {
+      throw new CliError(
+        `Docker volume "${volume}" is left over from an earlier "${name}" project and holds a different database ` +
+          `password. Remove it if that data can go (docker volume rm ${volume}), pick another project name, or drop --migrate.`,
+      );
+    }
   }
 
   // 6-8. Scaffold workspace -------------------------------------------------------------------------
@@ -114,6 +139,8 @@ export async function create(argv) {
 
   // 9-11. Environment, secrets, database -------------------------------------------------------------
   log.step('Generating environment files and application secrets');
+  const dbPort = dockerPostgres ? await freePort(5432) : db === 'pgsql' ? 5432 : 3306;
+  if (dockerPostgres && dbPort !== 5432) log.warn(`Port 5432 is in use; the project's Postgres will listen on 127.0.0.1:${dbPort}.`);
   const dbPassword = secret(24);
   const redisPassword = secret(24);
 
@@ -122,6 +149,7 @@ export async function create(argv) {
   rootEnv = setEnv(rootEnv, 'DB_PASSWORD', dbPassword);
   rootEnv = setEnv(rootEnv, 'REDIS_PASSWORD', redisPassword);
   rootEnv = setEnv(rootEnv, 'COMPOSE_PROJECT_NAME', name);
+  if (db === 'pgsql') rootEnv = setEnv(rootEnv, 'POSTGRES_PORT', String(dbPort));
   writeIfAbsent(join(root, '.env'), rootEnv);
 
   // Gateway env
@@ -131,7 +159,7 @@ export async function create(argv) {
   apiEnv = setEnv(apiEnv, 'DB_CONNECTION', db);
   if (db !== 'sqlite') {
     apiEnv = setEnv(apiEnv, 'DB_HOST', '127.0.0.1');
-    apiEnv = setEnv(apiEnv, 'DB_PORT', db === 'pgsql' ? '5432' : '3306');
+    apiEnv = setEnv(apiEnv, 'DB_PORT', String(dbPort));
     apiEnv = setEnv(apiEnv, 'DB_DATABASE', 'app');
     apiEnv = setEnv(apiEnv, 'DB_USERNAME', 'app');
     apiEnv = setEnv(apiEnv, 'DB_PASSWORD', dbPassword);
@@ -153,18 +181,21 @@ export async function create(argv) {
 
   // 14. Migrations -------------------------------------------------------------------------------------
   if (flags.migrate && !flags['skip-install']) {
-    log.step('Running migrations and seeding roles');
     const api = join(root, 'apps', 'api');
-    const port = db === 'pgsql' ? 5432 : 3306;
-    if (db !== 'sqlite' && !(await canConnect('127.0.0.1', port))) {
+    if (dockerPostgres) {
+      log.step(`Starting Postgres (docker compose, 127.0.0.1:${dbPort})`);
+      await run('docker', ['compose', '-f', 'docker-compose.infra.yml', 'up', '-d', '--wait', 'postgres'], { cwd: root });
+    }
+    if (db !== 'sqlite' && !(await canConnect('127.0.0.1', dbPort))) {
       throw new CliError(
-        `Workspace created, but nothing is listening on 127.0.0.1:${port}, so migrations were not run.\n` +
+        `Workspace created, but nothing is listening on 127.0.0.1:${dbPort}, so migrations were not run.\n` +
           (db === 'pgsql'
             ? `  Start Postgres, then migrate:\n    cd ${name}\n    docker compose -f docker-compose.infra.yml up -d postgres\n`
             : `  Start MySQL with database/user "app" and the DB_PASSWORD from apps/api/.env, then:\n    cd ${name}\n`) +
           '    cd apps/api && php artisan migrate && php artisan db:seed --class="Database\\Seeders\\RolePermissionSeeder"',
       );
     }
+    log.step('Running migrations and seeding roles');
     await run('php', ['artisan', 'migrate', '--force', '--no-interaction'], { cwd: api });
     await run('php', ['artisan', 'db:seed', '--class=Database\\Seeders\\RolePermissionSeeder', '--force'], { cwd: api });
   }
