@@ -5,6 +5,17 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+## [1.1.1] — install fixes
+
+### Fixed
+
+- `create --db pgsql|mysql` checks for the matching PHP PDO driver (`pdo_pgsql` / `pdo_mysql`) before scaffolding and names the
+  `php.ini` to edit, instead of failing mid-install with "could not find driver".
+- `create --migrate` checks that the database port is reachable first and prints the `docker compose` / `artisan migrate`
+  commands to run, instead of a stack trace.
+- `update` syncs the Kafka kit `routes/` folder (`ops.php` was missing in upgraded workspaces).
+- Service template ships `pint.json` excluding the framework-published `config/kafka.php` from lint.
+
 ## [1.1.0] — production hardening & reliability
 
 Additive and backward compatible: every new behaviour that could change a running system is **opt-in** (see
