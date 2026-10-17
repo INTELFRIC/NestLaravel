@@ -7,7 +7,7 @@ npm i -D nestlaravel                       # or per-project (create adds it for 
 
 | Command | What it does |
 |---------|--------------|
-| `create <name>` | New workspace. `--db sqlite\|pgsql\|mysql`, `--with-portals`, `--migrate`, `--skip-install`, `--skip-git`, `--skip-validate`, `-y` |
+| `create <name>` | New workspace. `--db pgsql|sqlite|mysql` (default `pgsql`)\|pgsql\|mysql`, `--with-portals`, `--migrate`, `--skip-install`, `--skip-git`, `--skip-validate`, `-y` |
 | `generate service <name>` | New Laravel microservice (see [MICROSERVICES.md](MICROSERVICES.md)). `--port N`, `--force`, `--skip-install` |
 | `generate event <type>` | **Schema-governed** event (recommended, 1.1+): class with an `EventSchema`, registered in `config/kafka.php` `events`. `--service <svc>` (services only), `--version N` (a new version is a new class `OrderCreatedV2`, published versions stay untouched), `--force` |
 | `generate kafka-event <type>` | Domain event class (+ `--consumer` handler). `--service <svc>` (use `api` for the gateway) |
@@ -15,7 +15,7 @@ npm i -D nestlaravel                       # or per-project (create adds it for 
 | `generate app web\|mobile [name]` | Scaffolds a Next.js (`web`, ports 3002+) or Flutter (`mobile`, port 8090) client in `apps/<name>` with a `project.json` **`serve`** target, the gateway URL and the CORS origin; recorded in `nestlaravel.json` → `clients`. `--port N`, `--force`, `--skip-install` (see [FRONTEND.md](FRONTEND.md)) |
 | `add portals` | Adds the Next.js customer (:3000) and admin (:3001) portals to a workspace created without `--with-portals` (CORS + workspaces + `serve` targets). `--skip-install` |
 | `add tenancy` | Installs the multi-tenancy package ([MULTI-TENANCY.md](MULTI-TENANCY.md)). `--service a,b` |
-| `dev` | Starts Kafka/Postgres/Redis (Docker) then serves every app with a `serve` target via Nx: API, services, portals and web/mobile clients (a Flutter client is skipped with a hint when the SDK is missing; a Next.js client when `npm install` is pending). `--no-infra`, `--docker` (full containerised stack) |
+| `dev` | Starts Kafka/Postgres/Redis (Docker), prepares the gateway database named in `apps/api/.env` (SQLite file, wait for Postgres/MySQL, `migrate` + role seed — no first-run 500), then serves every app with a `serve` target via Nx: API, services, portals and web/mobile clients (a Flutter client is skipped with a hint when the SDK is missing; a Next.js client when `npm install` is pending). `--no-infra`, `--docker` (full containerised stack) |
 | `test` / `lint` | `nx run-many -t test\|lint`. `--affected`, `--project <name>`, extra Nx args after `--` |
 | `build` | Production Docker images via Nx. `--tag 1.2.3`, `--registry ghcr.io/acme` |
 | `doctor` | Verifies Node, npm, PHP (+ extensions), Composer, Git, Docker, php-rdkafka, pcntl (graceful shutdown) and, inside a workspace, each app's `.env`, `APP_KEY`, signing secret length and dependencies |
@@ -39,7 +39,7 @@ Equivalent Nx usage works everywhere: `npx nx test orders-service`, `npx nx serv
 ## Examples
 
 ```bash
-npx nestlaravel create shop --db pgsql --migrate
+npx nestlaravel create shop --db `--db pgsql|sqlite|mysql` (default `pgsql`) --migrate
 cd shop
 npx nestlaravel generate service orders
 npx nestlaravel generate service payments --port 8055

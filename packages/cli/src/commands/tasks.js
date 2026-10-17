@@ -1,8 +1,10 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { connect } from 'node:net';
+import { dirname, join } from 'node:path';
 import { parseArgs } from '../args.js';
 import { capture, nx, run } from '../exec.js';
 import { c, CliError, log } from '../ui.js';
+import { getEnv } from '../secrets.js';
 import { readManifest, requireWorkspace } from '../workspace.js';
 
 /** Projects (name, tags, directory) that define `target`, in declaration order (reads project.json, no Nx needed). */
@@ -54,6 +56,70 @@ export function missingClients(root) {
   } catch {
     return [];
   }
+}
+
+/** What the gateway's own `apps/api/.env` selects, so `dev` can prepare exactly that database (null: no gateway env). */
+export function gatewayDbConfig(root) {
+  const file = join(root, 'apps', 'api', '.env');
+  if (!existsSync(file)) return null;
+  const env = readFileSync(file, 'utf8');
+  const driver = getEnv(env, 'DB_CONNECTION') || 'sqlite';
+  return {
+    driver,
+    host: getEnv(env, 'DB_HOST') || '127.0.0.1',
+    port: Number(getEnv(env, 'DB_PORT')) || (driver === 'mysql' ? 3306 : 5432),
+    sqliteFile: join(root, 'apps', 'api', 'database', 'database.sqlite'),
+  };
+}
+
+function canConnect(host, port, timeout = 1000) {
+  return new Promise((done) => {
+    const socket = connect({ host, port });
+    const finish = (ok) => { socket.destroy(); done(ok); };
+    socket.setTimeout(timeout, () => finish(false));
+    socket.once('connect', () => finish(true));
+    socket.once('error', () => finish(false));
+  });
+}
+
+async function waitForPort(host, port, seconds = 30) {
+  for (let i = 0; i < seconds; i++) {
+    if (await canConnect(host, port)) return true;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return false;
+}
+
+/**
+ * Make the database the gateway will actually use ready before it is served: create the SQLite file, wait for
+ * Postgres/MySQL, then run (idempotent) migrations and the role seeder. Without this a fresh project answers 500
+ * ("no such table: sessions") on its first request, whichever database apps/api/.env selects.
+ */
+export async function prepareGatewayDatabase(root) {
+  const db = gatewayDbConfig(root);
+  const api = join(root, 'apps', 'api');
+  if (!db || !existsSync(join(api, 'vendor'))) return;
+
+  try {
+    const declared = readManifest(root).database;
+    if (declared && declared !== db.driver) {
+      log.warn(`nestlaravel.json says ${declared} but apps/api/.env selects ${db.driver}; using ${db.driver} (edit DB_CONNECTION in apps/api/.env to change).`);
+    }
+  } catch { /* manifest problems are reported elsewhere */ }
+
+  if (db.driver === 'sqlite') {
+    if (!existsSync(db.sqliteFile)) {
+      mkdirSync(dirname(db.sqliteFile), { recursive: true });
+      writeFileSync(db.sqliteFile, '');
+    }
+  } else if (!(await waitForPort(db.host, db.port))) {
+    log.warn(`Gateway database (${db.driver}) is not reachable on ${db.host}:${db.port}; skipping migrations. Start it (or Docker) and re-run dev.`);
+    return;
+  }
+
+  log.step(`Preparing the gateway database (${db.driver})`);
+  await run('php', ['artisan', 'migrate', '--force', '--no-interaction'], { cwd: api });
+  await run('php', ['artisan', 'db:seed', '--class=Database\\Seeders\\RolePermissionSeeder', '--force'], { cwd: api });
 }
 
 function assertInstalled(root) {
@@ -126,6 +192,8 @@ export async function dev(argv) {
       log.ok('Infrastructure is healthy');
     }
   }
+
+  await prepareGatewayDatabase(root);
 
   const { serve: projects, skipped } = planServe(root);
   for (const s of skipped) log.warn(`Not starting ${s.name}: ${s.reason}`);

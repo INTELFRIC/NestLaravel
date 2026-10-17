@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { editFile, ensureDir, writeIfAbsent } from '../fsx.js';
 import { run } from '../exec.js';
-import { appKey, secret, setEnv } from '../secrets.js';
+import { appKey, getEnv, secret, setEnv } from '../secrets.js';
 import { c, CliError, log } from '../ui.js';
 import { readManifest, toEnvName, toStudly, validateName, writeManifest } from '../workspace.js';
 import { managedMap, recordManaged } from '../managed.js';
@@ -52,7 +52,7 @@ export async function generateService(root, rawName, flags) {
   svcEnv = setEnv(svcEnv, 'DB_CONNECTION', manifest.database === 'sqlite' ? 'sqlite' : manifest.database);
   if (manifest.database !== 'sqlite') {
     svcEnv = setEnv(svcEnv, 'DB_HOST', '127.0.0.1');
-    svcEnv = setEnv(svcEnv, 'DB_PORT', manifest.database === 'pgsql' ? '5432' : '3306');
+    svcEnv = setEnv(svcEnv, 'DB_PORT', gatewayDbPort(root, manifest.database));
     svcEnv = setEnv(svcEnv, 'DB_DATABASE', name.replace(/-/g, '_'));
     svcEnv = setEnv(svcEnv, 'DB_USERNAME', name.replace(/-/g, '_'));
     svcEnv = setEnv(svcEnv, 'DB_PASSWORD', dbPassword);
@@ -187,6 +187,13 @@ function wireDocker(root, { name, dir, env }) {
       `      ${env}_SERVICE_URL: http://${dir}:80\n      ${env}_SERVICE_SECRET: \${${env}_SERVICE_SECRET:?Set ${env}_SERVICE_SECRET in .env}\n      GATEWAY_${env}_ENABLED: "true"\n      # @nestlaravel:gateway-env`,
     ),
   );
+}
+
+/** Host port the gateway's database listens on (create may have moved Postgres off 5432); services share that server. */
+function gatewayDbPort(root, driver) {
+  const file = join(root, 'apps', 'api', '.env');
+  const configured = existsSync(file) ? getEnv(readFileSync(file, 'utf8'), 'DB_PORT') : '';
+  return configured || (driver === 'pgsql' ? '5432' : '3306');
 }
 
 /** Database-per-service: a dedicated role + database created on first Postgres start. */

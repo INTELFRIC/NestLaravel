@@ -40,7 +40,7 @@ Public path: `/api/v1/payments/*` on the gateway → `http://payments-service/ap
 Service
 ├── API               routes under /api/v1/<name>, reachable only through the gateway
 ├── Business logic    Modules/<Name>/{Domain,Application}
-├── Database          its own (sqlite locally, its own Postgres role+database in Compose/production)
+├── Database          its own (Postgres by default, its own Postgres role+database in Compose/production)
 ├── Configuration     its own .env, APP_KEY, secrets — nothing shared with siblings
 ├── Kafka             nestlaravel/kafka: outbox, producer, consumer pipeline, DLQ, idempotency
 ├── Tests             tests/Feature (gateway signature, Kafka kit), add your own

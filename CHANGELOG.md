@@ -5,6 +5,14 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+### Changed
+
+- `create` now defaults to `--db pgsql` (use `--db sqlite` for the old default). Postgres is moved to a free host port when 5432 is taken, and generated services follow that port.
+
+### Fixed
+
+- `nestlaravel dev` now prepares the database that `apps/api/.env` selects (creates the SQLite file, waits for Postgres/MySQL, runs migrations and the role seeder) before serving, so a fresh project no longer answers 500 on its first request.
+
 ## [1.3.0] — web and mobile clients from the CLI
 
 ### Added
@@ -20,6 +28,10 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
   Next.js client without installed dependencies, with a hint. The Flutter sample target is now `serve` (was `run`).
 
 ## [1.2.1] — API docs page
+
+### Changed
+
+- `create` now defaults to `--db pgsql` (use `--db sqlite` for the old default). Postgres is moved to a free host port when 5432 is taken, and generated services follow that port.
 
 ### Fixed
 
@@ -37,6 +49,10 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
   earlier project of the same name would reject the new database password.
 
 ## [1.1.1] — install fixes
+
+### Changed
+
+- `create` now defaults to `--db pgsql` (use `--db sqlite` for the old default). Postgres is moved to a free host port when 5432 is taken, and generated services follow that port.
 
 ### Fixed
 
@@ -87,6 +103,10 @@ Additive and backward compatible: every new behaviour that could change a runnin
 ### Changed
 - Consumer idempotency uses the inbox when `KAFKA_INBOX_ENABLED=true` (default `false` = the 1.0 cache check, unchanged).
 - `docker-compose.yml` uses the structured log channel, enables the inbox and sets `stop_grace_period: 40s`.
+
+### Changed
+
+- `create` now defaults to `--db pgsql` (use `--db sqlite` for the old default). Postgres is moved to a free host port when 5432 is taken, and generated services follow that port.
 
 ### Fixed
 - Two outbox publishers could publish the same row; the cache-based idempotency check was not atomic with the business

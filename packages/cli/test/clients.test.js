@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { missingClients, planServe, projectsWithDetails } from '../src/commands/tasks.js';
+import { gatewayDbConfig, missingClients, planServe, projectsWithDetails } from '../src/commands/tasks.js';
 import { addPortals, generateApp } from '../src/generators/app.js';
 import { getEnv } from '../src/secrets.js';
 
@@ -111,4 +111,14 @@ test('add portals: copies both portals once, never overwrites edits, records the
   assert.equal(read(root, 'apps/customer-portal/README.md'), 'mine');
   assert.equal(json(root, 'package.json').workspaces.length, 3);
   assert.equal(json(root, 'nestlaravel.json').clients.length, 2);
+});
+
+test('gatewayDbConfig reads the database the gateway .env selects (sqlite default, pgsql port)', () => {
+  const root = workspace();
+  assert.equal(gatewayDbConfig(root).driver, 'sqlite');
+  writeFileSync(join(root, 'apps', 'api', '.env'), 'DB_CONNECTION=pgsql\nDB_HOST=127.0.0.1\nDB_PORT=5433\n');
+  const db = gatewayDbConfig(root);
+  assert.equal(db.driver, 'pgsql');
+  assert.equal(db.port, 5433);
+  assert.equal(gatewayDbConfig(join(root, 'nope')), null);
 });

@@ -20,7 +20,7 @@ npx nestlaravel doctor
 ## 2. Create a project
 
 ```bash
-npx nestlaravel create my-project        # sqlite for the gateway (zero setup)
+npx nestlaravel create my-project        # Postgres for the gateway (default; add --db sqlite|mysql to change)
 npx nestlaravel create my-project --db pgsql --migrate
 cd my-project
 ```
@@ -34,7 +34,7 @@ role seeding → `git init` → validation (`nx show projects`, gateway test sui
 Postgres container (`docker-compose.infra.yml`) before migrating; if port 5432 is taken it uses the next free port and
 writes it to `POSTGRES_PORT` (root `.env`) and `DB_PORT` (`apps/api/.env`). Without Docker, start a Postgres yourself.
 
-Options: `--db sqlite|pgsql|mysql`, `--with-portals`, `--migrate`, `--skip-install`, `--skip-git`, `--skip-validate`,
+Options: `--db pgsql|sqlite|mysql` (default `pgsql`), `--with-portals`, `--migrate`, `--skip-install`, `--skip-git`, `--skip-validate`,
 `--skip-checks`, `-y`.
 
 Created without `--with-portals`? Add them later with `npx nestlaravel add portals`; add a web or mobile client with

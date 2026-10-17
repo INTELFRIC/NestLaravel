@@ -38,7 +38,7 @@ Usage: nestlaravel create <name> [options]
 Creates a new NestLaravel workspace (Nx + Laravel gateway + Kafka kit).
 
 Options:
-  --db <sqlite|pgsql|mysql>  Database for the gateway on the host (default: sqlite)
+  --db <sqlite|pgsql|mysql>  Database for the gateway on the host (default: pgsql)
   --with-portals             Include the Next.js customer/admin portals
   --migrate                  Run migrations and seed roles after install
                              (with --db pgsql and Docker running, starts the project's Postgres container first)
@@ -57,7 +57,7 @@ export async function create(argv) {
   if (flags.help) return void console.log(CREATE_HELP);
 
   const name = validateName(positionals[0], { kind: 'project name', allowReserved: true });
-  const db = String(flags.db ?? 'sqlite');
+  const db = String(flags.db ?? 'pgsql');
   if (!DB_CHOICES.includes(db)) throw new CliError(`--db must be one of: ${DB_CHOICES.join(', ')}`);
 
   const root = resolve(process.cwd(), name);
@@ -77,8 +77,8 @@ export async function create(argv) {
 
   // --db pgsql --migrate with a running Docker daemon: the project's own Postgres container is started before
   // migrating. Its host port must be free — another Postgres on 5432 would answer with the wrong credentials.
-  const dockerPostgres = db === 'pgsql' && flags.migrate && !flags['skip-install']
-    && capture('docker', ['info', '--format', '{{.ServerVersion}}'], { timeout: 8000 }) != null;
+  const dockerUp = db === 'pgsql' && capture('docker', ['info', '--format', '{{.ServerVersion}}'], { timeout: 8000 }) != null;
+  const dockerPostgres = dockerUp && flags.migrate && !flags['skip-install'];
   if (dockerPostgres) {
     // A volume left by an earlier project of the same name keeps its old password (Postgres applies
     // POSTGRES_PASSWORD only on first init), so migrating against it would fail authentication.
@@ -139,8 +139,8 @@ export async function create(argv) {
 
   // 9-11. Environment, secrets, database -------------------------------------------------------------
   log.step('Generating environment files and application secrets');
-  const dbPort = dockerPostgres ? await freePort(5432) : db === 'pgsql' ? 5432 : 3306;
-  if (dockerPostgres && dbPort !== 5432) log.warn(`Port 5432 is in use; the project's Postgres will listen on 127.0.0.1:${dbPort}.`);
+  const dbPort = dockerUp ? await freePort(5432) : db === 'pgsql' ? 5432 : 3306;
+  if (dockerUp && dbPort !== 5432) log.warn(`Port 5432 is in use; the project's Postgres will listen on 127.0.0.1:${dbPort}.`);
   const dbPassword = secret(24);
   const redisPassword = secret(24);
 

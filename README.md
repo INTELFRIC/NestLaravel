@@ -11,7 +11,9 @@ scaffolds and upgrades everything.
 npx nestlaravel create my-project
 cd my-project
 npx nestlaravel generate service orders
-npx nestlaravel dev
+npx nestlaravel add portals                  # optional: Next.js customer + admin portals
+npx nestlaravel generate app web storefront  # optional: Next.js (web) or Flutter (mobile) client
+npx nestlaravel dev                          # API, services and clients in one terminal
 ```
 
 ## Why NestLaravel
@@ -22,7 +24,7 @@ npx nestlaravel dev
 | One front door | `apps/api` is the only public interface: authentication, rate limiting, routing |
 | Services that cannot be bypassed | Gateway → service calls are HMAC-signed; services reject anything else (fail closed) |
 | Reliable async messaging | Transactional outbox, `acks=all` + idempotent producer, manual-commit consumer, retries, dead-letter topics, idempotent handlers |
-| A repeatable workflow | `create`, `generate service`, `generate kafka-event`, `dev`, `test`, `build`, `update` |
+| A repeatable workflow | `create`, `generate service|app|kafka-event`, `add portals`, `dev`, `test`, `build`, `update` |
 | Optional multi-tenancy | `nestlaravel add tenancy` — tenant-scoped Eloquent, jobs, cache, storage and Kafka events |
 
 ## Architecture at a glance

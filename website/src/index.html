@@ -128,7 +128,9 @@ Nx workspace
       <ol class="steps">
         <li><strong>Create a project</strong><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel create my-project</code></pre></div></li>
         <li><strong>Enter the workspace</strong><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>cd my-project</code></pre></div></li>
-        <li><strong>Start development</strong><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel dev</code></pre></div></li>
+        <li><strong>Add portals or a client (optional)</strong><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel add portals
+npx nestlaravel generate app web storefront</code></pre></div></li>
+        <li><strong>Start everything</strong><div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel dev</code></pre></div></li>
       </ol>
     </div>
     <div>
@@ -157,7 +159,7 @@ my-project is ready.</code></pre></div>
         <tr><td>PHP</td><td>&ge; {{phpMin}}</td><td>Tested on {{phpTested}}; extensions: {{phpExt}}</td></tr>
         <tr><td>Composer</td><td>&ge; {{composerMin}}</td><td></td></tr>
         <tr><td>Laravel / Nx</td><td>{{laravel}} / {{nx}}</td><td>Installed for you</td></tr>
-        <tr><td>Database</td><td>SQLite, PostgreSQL {{postgres}} or MySQL</td><td>SQLite needs no setup</td></tr>
+        <tr><td>Database</td><td>PostgreSQL {{postgres}} (default), MySQL or SQLite</td><td>Postgres runs in Docker; <code>dev</code> migrates it on first start</td></tr>
         <tr><td>Apache Kafka</td><td>{{kafka}}</td><td>Bundled dev broker via Docker; <code>php-rdkafka</code> to reach a broker from PHP outside Docker</td></tr>
         <tr><td>Front-end tooling</td><td>Optional</td><td>Only for the client type you add: Node.js (web), Flutter SDK (mobile/desktop), Rust + platform WebView tools (Tauri)</td></tr>
         <tr><td>Redis</td><td>{{redis}}</td><td>Required for queues/cache in production; optional locally</td></tr>
@@ -435,6 +437,7 @@ flutter create desktop --platforms windows,macos,linux</code></pre></div>
     <h2 class="title" id="h-new">What&rsquo;s new</h2>
     <p class="sub">Recent releases, in plain terms. Full details: <a href="/docs/changelog.html">changelog</a> and <a href="/docs/upgrading.html">upgrading guide</a>.</p>
     <div class="grid">
+      <div class="card reveal"><h3>Postgres by default</h3><p><code>create</code> now uses PostgreSQL unless you pass <code>--db sqlite</code> or <code>--db mysql</code>. <code>dev</code> starts it, waits for it, and runs migrations and the role seeder, so a fresh project no longer answers 500 on its first request.</p></div>
       <div class="card reveal"><h3>Clients from the CLI</h3><p><code>add portals</code> and <code>generate app web|mobile</code> scaffold Next.js and Flutter clients with the gateway URL and CORS already set, and <code>dev</code> starts them with the API. Before, you hand-created the app and ran each portal in its own terminal.</p></div>
       <div class="card reveal"><h3>Postgres that just works <small>1.2.0</small></h3><p><code>create --db pgsql --migrate</code> starts the project&rsquo;s own Postgres container, picks the next free port if 5432 is taken, and stops early if a leftover Docker volume would reject the new password.</p></div>
       <div class="card reveal"><h3>API docs page fixed <small>1.2.1</small></h3><p>The gateway&rsquo;s <code>/docs/api</code> page rendered blank because the strict security policy blocked its script bundle. Only that route is relaxed; every other response keeps the strict policy.</p></div>
