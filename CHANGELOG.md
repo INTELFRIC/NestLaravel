@@ -5,6 +5,13 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+## [1.3.2] — leftover Postgres volumes
+
+### Fixed
+
+- `create` no longer reuses a Docker volume left by an earlier project of the same name (it kept the old Postgres password, so the first `dev` failed with "password authentication failed"). The new project gets its own Compose name and starts clean; the old volume is untouched.
+- `dev` checks the gateway's Postgres credentials before migrating and, when they are rejected, stops with the exact fix (`docker compose -f docker-compose.infra.yml down -v`) instead of a Laravel stack trace.
+
 ## [1.3.1] — Postgres by default, first-run database setup
 
 ### Changed

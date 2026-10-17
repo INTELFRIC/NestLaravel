@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { connect } from 'node:net';
 import { join, resolve } from 'node:path';
@@ -79,16 +80,15 @@ export async function create(argv) {
   // migrating. Its host port must be free — another Postgres on 5432 would answer with the wrong credentials.
   const dockerUp = db === 'pgsql' && capture('docker', ['info', '--format', '{{.ServerVersion}}'], { timeout: 8000 }) != null;
   const dockerPostgres = dockerUp && flags.migrate && !flags['skip-install'];
-  if (dockerPostgres) {
-    // A volume left by an earlier project of the same name keeps its old password (Postgres applies
-    // POSTGRES_PASSWORD only on first init), so migrating against it would fail authentication.
-    const volume = `${name}_postgres_data`;
-    if (capture('docker', ['volume', 'inspect', volume]) != null) {
-      throw new CliError(
-        `Docker volume "${volume}" is left over from an earlier "${name}" project and holds a different database ` +
-          `password. Remove it if that data can go (docker volume rm ${volume}), pick another project name, or drop --migrate.`,
-      );
+  // A Docker volume left by an earlier project of the same name keeps its old Postgres password (Postgres applies
+  // POSTGRES_PASSWORD only on first init), so the new project could never log in. Instead of failing, give this project
+  // a Compose name whose volumes are unused; the leftover data is never touched.
+  let composeName = name;
+  if (dockerUp) {
+    while (capture('docker', ['volume', 'inspect', `${composeName}_postgres_data`]) != null) {
+      composeName = `${name}-${randomBytes(2).toString('hex')}`;
     }
+    if (composeName !== name) log.warn(`A Docker volume from an earlier "${name}" project exists; this project uses Compose name "${composeName}" so it starts clean.`);
   }
 
   // 6-8. Scaffold workspace -------------------------------------------------------------------------
@@ -148,7 +148,7 @@ export async function create(argv) {
   let rootEnv = readFileSync(join(root, '.env.example'), 'utf8');
   rootEnv = setEnv(rootEnv, 'POSTGRES_PASSWORD', dbPassword);
   rootEnv = setEnv(rootEnv, 'REDIS_PASSWORD', redisPassword);
-  rootEnv = setEnv(rootEnv, 'COMPOSE_PROJECT_NAME', name);
+  rootEnv = setEnv(rootEnv, 'COMPOSE_PROJECT_NAME', composeName);
   if (db === 'pgsql') rootEnv = setEnv(rootEnv, 'POSTGRES_PORT', String(dbPort));
   writeIfAbsent(join(root, '.env'), rootEnv);
 

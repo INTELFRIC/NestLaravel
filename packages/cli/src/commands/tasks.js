@@ -68,6 +68,9 @@ export function gatewayDbConfig(root) {
     driver,
     host: getEnv(env, 'DB_HOST') || '127.0.0.1',
     port: Number(getEnv(env, 'DB_PORT')) || (driver === 'mysql' ? 3306 : 5432),
+    database: getEnv(env, 'DB_DATABASE') || 'app',
+    username: getEnv(env, 'DB_USERNAME') || 'app',
+    password: getEnv(env, 'DB_PASSWORD') || '',
     sqliteFile: join(root, 'apps', 'api', 'database', 'database.sqlite'),
   };
 }
@@ -88,6 +91,33 @@ async function waitForPort(host, port, seconds = 30) {
     await new Promise((r) => setTimeout(r, 1000));
   }
   return false;
+}
+
+/**
+ * Postgres applies POSTGRES_PASSWORD only when its data volume is first created. A volume left by an earlier project
+ * of the same name keeps the old password, and migrating then dies with an opaque "password authentication failed".
+ * Probe the project's own container with the gateway's credentials and explain the fix instead.
+ */
+async function assertPostgresCredentials(root, db) {
+  if (!db.password || !existsSync(join(root, 'docker-compose.infra.yml'))) return;
+  const probe = await run(
+    'docker',
+    ['compose', '-f', 'docker-compose.infra.yml', 'exec', '-T', '-e', 'PGPASSWORD', 'postgres', 'psql', '-h', 'postgres', '-U', db.username, '-d', db.database, '-tAc', 'select 1'],
+    { cwd: root, env: { PGPASSWORD: db.password }, silent: true, allowFailure: true },
+  );
+  if (probe.code === 0 || !/password authentication failed/i.test(`${probe.stderr}${probe.stdout}`)) return;
+  const project = (() => { try { return readManifest(root).name; } catch { return root.split(/[\/]/).pop(); } })();
+  throw new CliError(
+    `The project's Postgres rejected the DB_PASSWORD in apps/api/.env: its data volume was created earlier with a different password.
+` +
+      `  If that data can go, recreate it and re-run dev:
+` +
+      `    docker compose -f docker-compose.infra.yml down -v
+` +
+      `    npx nestlaravel dev
+` +
+      `  Otherwise set DB_PASSWORD in apps/api/.env to the password that volume was created with (project "${project}").`,
+  );
 }
 
 /**
@@ -116,6 +146,8 @@ export async function prepareGatewayDatabase(root) {
     log.warn(`Gateway database (${db.driver}) is not reachable on ${db.host}:${db.port}; skipping migrations. Start it (or Docker) and re-run dev.`);
     return;
   }
+
+  if (db.driver === 'pgsql') await assertPostgresCredentials(root, db);
 
   log.step(`Preparing the gateway database (${db.driver})`);
   await run('php', ['artisan', 'migrate', '--force', '--no-interaction'], { cwd: api });

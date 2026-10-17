@@ -71,3 +71,17 @@ npx nestlaravel build       # production Docker images (needs Docker)
 | `composer install` is slow on Windows | exclude the project folder from Defender real-time scanning |
 | Port already used | `generate service payments --port 8055`; gateway port via `php artisan serve --port` |
 | Kafka calls do nothing on the host | `KAFKA_ENABLED=false` (default) or no `php-rdkafka`: the log driver is used. Use `dev --docker` |
+| `password authentication failed for user "app"` on `dev` | an old Docker volume (from an earlier project with the same name) still holds a different Postgres password. If its data can go: `docker compose -f docker-compose.infra.yml down -v`, then `npx nestlaravel dev`. New projects avoid this automatically (see below) |
+
+### Postgres rejects the password on first `dev`
+
+Postgres applies `POSTGRES_PASSWORD` only when its data volume is first created. If you delete a project folder but not
+its Docker volumes and later create a project with the same name, the old volume (with the old password) is reused and
+the gateway cannot log in.
+
+* `create` now detects such a volume and gives the new project its own Compose name (for example `shop-a3f1`), so it
+  starts clean and the old data is left untouched.
+* `dev` checks the credentials before migrating. For a project that already hit the problem it stops with the fix instead of
+  a stack trace: run `docker compose -f docker-compose.infra.yml down -v` (this deletes the project's Postgres, Redis and
+  Kafka data) and start `dev` again, or set `DB_PASSWORD` in `apps/api/.env` to the password the volume was created with.
+
