@@ -5,9 +5,15 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+## [1.3.1] — Postgres by default, first-run database setup
+
 ### Changed
 
 - `create` now defaults to `--db pgsql` (use `--db sqlite` for the old default). Postgres is moved to a free host port when 5432 is taken, and generated services follow that port.
+
+### Security
+
+- Next.js 16.3.7 → 16.4.2 (portals and the `generate app web` template) and `source-map-js` updated to clear high-severity `npm audit` advisories.
 
 ### Fixed
 

@@ -149,8 +149,8 @@ const webFiles = (name, port) => ({
     version: '0.1.0',
     private: true,
     scripts: { dev: `next dev -p ${port}`, build: 'next build', start: `next start -p ${port}`, lint: 'eslint' },
-    dependencies: { next: '16.3.7', react: '19.2.8', 'react-dom': '19.2.8' },
-    devDependencies: { '@types/node': '^20', '@types/react': '^19', '@types/react-dom': '^19', eslint: '^9', 'eslint-config-next': '16.3.7', typescript: '^5' },
+    dependencies: { next: '16.4.2', react: '19.2.8', 'react-dom': '19.2.8' },
+    devDependencies: { '@types/node': '^20', '@types/react': '^19', '@types/react-dom': '^19', eslint: '^9', 'eslint-config-next': '16.4.2', typescript: '^5' },
   }),
   'tsconfig.json': json({
     compilerOptions: {
