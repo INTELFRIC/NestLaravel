@@ -1,8 +1,25 @@
 # Adding web and mobile apps
 
 NestLaravel does not force a frontend stack. Any web or mobile client — **Next.js, React, plain HTML/JS, TypeScript,
-Flutter, Vue, Angular, React Native, Swift, Kotlin** — can sit in the workspace or live in its own repository. There is
-no generator to learn: you create the app with that framework's own tool, then connect it with the five steps below.
+Flutter, Vue, Angular, React Native, Swift, Kotlin** — can sit in the workspace or live in its own repository.
+
+## Quick start: generators
+
+```bash
+npx nestlaravel add portals                   # Next.js customer (:3000) + admin (:3001) portals
+npx nestlaravel generate app web storefront   # Next.js app, next free port from 3002
+npx nestlaravel generate app mobile           # Flutter app (default name "mobile"), served as web on :8090
+npx nestlaravel dev                           # API + services + every client, in one terminal
+```
+
+Each command writes the app under `apps/<name>` with a `project.json` whose **`serve`** target is what
+`nestlaravel dev` starts, points it at the gateway (`http://localhost:8000/api`), adds its origin to
+`CORS_ALLOWED_ORIGINS` in `apps/api/.env` and `.env.example` (restart the gateway), and records it in `nestlaravel.json`
+(`clients`). Options: `--port N`, `--force`, `--skip-install`. The Flutter generator runs `flutter create` when the SDK
+is installed; `dev` skips a Flutter client (with a hint) when it is not. For a phone or emulator use
+`npx nx run mobile:device` (Android emulator reaches the gateway at `10.0.2.2:8000`). No extra terminals are needed.
+
+For any other stack, create the app with that framework's own tool and connect it with the five steps below.
 
 ## Pick your client type
 
@@ -70,7 +87,7 @@ Nx `project.json` template (adjust the commands and port):
 }
 ```
 
-A target named `serve` is started by `npx nestlaravel dev`; `test`, `lint` and `build` are run by the matching commands.
+A target named `serve` is started by `npx nestlaravel dev` (the generators above write it for you); `test`, `lint` and `build` are run by the matching commands.
 
 > If the app has its own `package.json`, add its folder to the root `package.json` → `"workspaces"` (for example
 > `"apps/web"`) and run `npm install` at the root. Skip this for Flutter and static HTML.
@@ -302,12 +319,14 @@ cd mobile
 flutter pub add http flutter_secure_storage
 ```
 
-1. Nx (optional) — `apps/mobile/project.json`. Use `run`, not `serve`, so `nestlaravel dev` doesn't launch a device:
+1. Nx (optional) — `npx nestlaravel generate app mobile` writes this for you. `serve` uses Flutter's `web-server` device, which
+   needs no emulator or browser window, so `nestlaravel dev` can start it unattended; `device` targets a phone/emulator:
    ```json
    {
      "name": "mobile", "projectType": "application", "sourceRoot": "apps/mobile/lib", "tags": ["type:client", "stack:flutter"],
      "targets": {
-       "run":  { "executor": "nx:run-commands", "options": { "command": "flutter run -d chrome --web-port 8090", "cwd": "apps/mobile" } },
+       "serve": { "executor": "nx:run-commands", "options": { "command": "flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8090 --dart-define=API_URL=http://localhost:8000/api", "cwd": "apps/mobile" } },
+       "device": { "executor": "nx:run-commands", "options": { "command": "flutter run --dart-define=API_URL=http://10.0.2.2:8000/api", "cwd": "apps/mobile" } },
        "test": { "executor": "nx:run-commands", "options": { "command": "flutter test", "cwd": "apps/mobile" } },
        "lint": { "executor": "nx:run-commands", "options": { "command": "flutter analyze", "cwd": "apps/mobile" } },
        "build": { "executor": "nx:run-commands", "options": { "command": "flutter build web --release", "cwd": "apps/mobile" } },

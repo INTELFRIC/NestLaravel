@@ -5,6 +5,7 @@ import { update, UPDATE_HELP } from './commands/update.js';
 import { build, dev, lint, test } from './commands/tasks.js';
 import { forward, OPS_COMMANDS, productionCheck } from './commands/ops.js';
 import { checkRequirements, checkWorkspace, printRequirements } from './doctor.js';
+import { generateApp } from './generators/app.js';
 import { generateEvent } from './generators/event.js';
 import { generateKafkaEvent, generateKafkaTopic } from './generators/kafka.js';
 import { generateService } from './generators/service.js';
@@ -23,6 +24,8 @@ ${c.bold('Project')}
   generate event <type>               Schema-governed event           (--service <svc> [--version N])
   generate kafka-event <type>         Plain domain event              (--service <svc> [--consumer])
   generate kafka-topic <name>         Register a Kafka topic          (--service <svc> [--create])
+  generate app web|mobile [name]      Next.js or Flutter client      (Nx serve target, gateway URL, CORS)
+  add portals                         Add the Next.js customer + admin portals
   add tenancy                         Install the multi-tenancy package
 
 ${c.bold('Develop')}
@@ -53,6 +56,7 @@ Usage: nestlaravel generate <generator> <name> [options]
   event <domain.entity.action> --service <svc> [--version N] [--force]
   kafka-event <domain.entity.action> --service <svc> [--consumer] [--force]
   kafka-topic <name> --service <svc> [--create] [--partitions N]
+  app <web|mobile> [name] [--port N] [--force] [--skip-install]
 
 Aliases: g, gen. Service names are lowercase (e.g. payments); "users" works too.
 `;
@@ -89,12 +93,16 @@ export async function main(argv) {
         return 0;
       }
       const root = requireWorkspace();
-      if (!name) throw new CliError(`Missing name. Example: nestlaravel generate ${what} ${what === 'service' ? 'payments' : what === 'event' || what === 'kafka-event' ? 'user.created --service users' : 'user-events --service users'}`);
-      if (what === 'service') await generateService(root, name, flags);
+      if (!name && what !== 'app') throw new CliError(`Missing name. Example: nestlaravel generate ${what} ${what === 'service' ? 'payments' : what === 'event' || what === 'kafka-event' ? 'user.created --service users' : 'user-events --service users'}`);
+      if (what === 'app') {
+        const [, kind, appName] = positionals;
+        if (!kind) throw new CliError('Missing app type. Example: nestlaravel generate app mobile');
+        await generateApp(root, kind, appName, flags);
+      } else if (what === 'service') await generateService(root, name, flags);
       else if (what === 'event') await generateEvent(root, name, flags);
       else if (what === 'kafka-event') await generateKafkaEvent(root, name, flags);
       else if (what === 'kafka-topic') await generateKafkaTopic(root, name, flags);
-      else throw new CliError(`Unknown generator "${what}". Available: service, event, kafka-event, kafka-topic`);
+      else throw new CliError(`Unknown generator "${what}". Available: service, event, kafka-event, kafka-topic, app`);
       return 0;
     }
 

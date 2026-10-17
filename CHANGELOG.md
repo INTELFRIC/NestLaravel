@@ -5,6 +5,20 @@ and the [Keep a Changelog](https://keepachangelog.com/) format. Upgrade instruct
 
 ## [Unreleased]
 
+## [1.3.0] — web and mobile clients from the CLI
+
+### Added
+
+- `nestlaravel add portals` adds the Next.js customer/admin portals to a workspace created without `--with-portals`
+  (workspaces, `.env.local`, CORS, `portals: true` in `nestlaravel.json`).
+- `nestlaravel generate app web|mobile [name]` scaffolds a Next.js or Flutter client in `apps/<name>` with an Nx `serve`
+  target, the gateway URL and the CORS origin; recorded under `clients` in `nestlaravel.json`.
+
+### Changed
+
+- `nestlaravel dev` starts these clients with the API (no extra terminals) and skips a Flutter client without an SDK, or a
+  Next.js client without installed dependencies, with a hint. The Flutter sample target is now `serve` (was `run`).
+
 ## [1.2.1] — API docs page
 
 ### Fixed

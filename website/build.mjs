@@ -181,6 +181,7 @@ const NAV = [
   ['Architecture', '/#architecture'],
   ['Guides', '/#learn'],
   ['Clients', '/#clients'],
+  ["What's new", '/#whats-new'],
   ['Examples', '/#examples'],
   ['CLI', '/docs/cli.html'],
   ['API', '/docs/gateway.html'],

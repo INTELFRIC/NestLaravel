@@ -23,13 +23,18 @@ packages/
 cd apps/api
 php artisan serve
 
-# Terminal 2 — install JS workspaces once from repo root
+# Install JS workspaces once from repo root
 npm install
-npm run customer-portal   # :3000
-npm run admin-portal      # :3001
+
+# Start everything (API, services, portals) — portals are Nx projects with a `serve` target
+npx nestlaravel dev
 ```
 
-Or with Nx (after `npm install`):
+No extra terminals needed: `nestlaravel dev` serves every app that has a `serve` target, including
+`customer-portal` (:3000) and `admin-portal` (:3001). Workspace created without `--with-portals`?
+Run `npx nestlaravel add portals`.
+
+Or with Nx directly (after `npm install`):
 
 ```bash
 npx nx serve api
@@ -49,10 +54,11 @@ CORS origins are configured in `apps/api/config/cors.php` via `CORS_ALLOWED_ORIG
 ## Add another portal
 
 ```bash
-npx create-next-app@latest apps/partner-portal --ts --eslint --app --src-dir --use-npm
+npx nestlaravel generate app web partner-portal   # Next.js on the next free port (3002+), with serve target, gateway URL and CORS
 ```
 
-Copy `src/lib/api.ts` + login page pattern from `customer-portal`, set port, add workspace entry in root `package.json`, and add the origin to `CORS_ALLOWED_ORIGINS`.
+It writes `apps/partner-portal` (with `project.json`), adds the workspace entry, allows its origin in
+`CORS_ALLOWED_ORIGINS` (restart the gateway) and `nestlaravel dev` starts it. Copy the login page pattern from `customer-portal`.
 
 ## Related
 

@@ -46,8 +46,7 @@ php artisan db:seed --force
 # Portals (repo root)
 cd ../..
 npm install
-npm run customer-portal   # :3000
-npm run admin-portal      # :3001
+npx nestlaravel dev       # API, services and both portals (:3000, :3001)
 ```
 
 Demo logins (after seed):
@@ -244,11 +243,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 ### Step 2.5 — Run UI
 
 ```bash
-# terminal A — API (Docker or artisan serve)
-# terminal B
-npm run customer-portal
-# terminal C
-npm run admin-portal
+npx nestlaravel dev   # starts the API, services and both portals together
 ```
 
 UI → Gateway → Orders module. That is the effective daily workflow.
@@ -406,9 +401,7 @@ php artisan test
 # Gateway registry
 curl http://localhost:8000/api/gateway/services
 
-# Portals
-npm run customer-portal
-npm run admin-portal
+# Portals start with: npx nestlaravel dev  (customer :3000, admin :3001)
 ```
 
 ---

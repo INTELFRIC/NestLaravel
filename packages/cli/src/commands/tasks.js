@@ -3,10 +3,10 @@ import { join } from 'node:path';
 import { parseArgs } from '../args.js';
 import { capture, nx, run } from '../exec.js';
 import { c, CliError, log } from '../ui.js';
-import { requireWorkspace } from '../workspace.js';
+import { readManifest, requireWorkspace } from '../workspace.js';
 
-/** Projects that define `target`, in declaration order (reads project.json, no Nx needed). */
-function projectsWith(root, target) {
+/** Projects (name, tags, directory) that define `target`, in declaration order (reads project.json, no Nx needed). */
+export function projectsWithDetails(root, target) {
   const found = [];
   const apps = join(root, 'apps');
   if (!existsSync(apps)) return found;
@@ -15,12 +15,45 @@ function projectsWith(root, target) {
     if (!entry.isDirectory() || !existsSync(file)) continue;
     try {
       const json = JSON.parse(readFileSync(file, 'utf8'));
-      if (json.targets?.[target]) found.push(json.name ?? entry.name);
+      if (json.targets?.[target]) found.push({ name: json.name ?? entry.name, tags: json.tags ?? [], dir: join(apps, entry.name) });
     } catch {
       /* ignore malformed project.json — Nx will report it */
     }
   }
   return found;
+}
+
+const projectsWith = (root, target) => projectsWithDetails(root, target).map((p) => p.name);
+
+/**
+ * Which `serve` projects `dev` should start. Web/mobile clients need their own toolchain, so a client that cannot
+ * run yet is skipped with the exact fix instead of crashing the whole `nx run-many`.
+ */
+export function planServe(root, { hasFlutter = () => capture('flutter', ['--version']) != null } = {}) {
+  const serve = [];
+  const skipped = [];
+  let flutterOk;
+  for (const p of projectsWithDetails(root, 'serve')) {
+    if (p.tags.includes('stack:flutter')) {
+      flutterOk ??= hasFlutter();
+      if (!flutterOk) { skipped.push({ name: p.name, reason: 'Flutter SDK not found (https://docs.flutter.dev/get-started/install)' }); continue; }
+    }
+    if (p.tags.includes('stack:next') && !existsSync(join(root, 'node_modules', 'next')) && !existsSync(join(p.dir, 'node_modules', 'next'))) {
+      skipped.push({ name: p.name, reason: 'dependencies missing — run: npm install' });
+      continue;
+    }
+    serve.push(p.name);
+  }
+  return { serve, skipped };
+}
+
+/** Clients the manifest says were scaffolded but whose folder is gone. */
+export function missingClients(root) {
+  try {
+    return (readManifest(root).clients ?? []).filter((x) => !existsSync(join(root, 'apps', x.name))).map((x) => x.name);
+  } catch {
+    return [];
+  }
 }
 
 function assertInstalled(root) {
@@ -86,7 +119,7 @@ export async function dev(argv) {
       log.warn('Docker daemon is not running — skipping infrastructure. Start Docker Desktop or use --no-infra.');
     } else {
       if (!existsSync(join(root, '.env'))) {
-        throw new CliError('Missing .env in the workspace root (holds DB_PASSWORD / REDIS_PASSWORD). Re-create it from .env.example.');
+        throw new CliError('Missing .env in the workspace root (holds POSTGRES_PASSWORD / REDIS_PASSWORD). Re-create it from .env.example.');
       }
       log.step('Starting infrastructure (Postgres, Redis, Kafka KRaft)');
       await run('docker', ['compose', '-f', 'docker-compose.infra.yml', 'up', '-d', '--wait'], { cwd: root });
@@ -94,9 +127,17 @@ export async function dev(argv) {
     }
   }
 
-  const projects = projectsWith(root, 'serve');
-  if (projects.length === 0) throw new CliError('No project defines a "serve" target.');
+  const { serve: projects, skipped } = planServe(root);
+  for (const s of skipped) log.warn(`Not starting ${s.name}: ${s.reason}`);
+  for (const name of missingClients(root)) log.warn(`${name} is recorded in nestlaravel.json but apps/${name} is missing.`);
+  try {
+    if (readManifest(root).portals && !existsSync(join(root, 'apps', 'customer-portal'))) {
+      log.warn('nestlaravel.json lists portals but apps/customer-portal is missing — run: nestlaravel add portals');
+    }
+  } catch { /* manifest problems are reported elsewhere */ }
+  if (projects.length === 0) throw new CliError('No project can be served: none defines a "serve" target (or all were skipped, see above).');
   log.step(`Serving: ${projects.join(', ')}`);
   log.info(c.dim('Ctrl+C stops the apps (infrastructure keeps running; stop it with: docker compose -f docker-compose.infra.yml down)'));
-  await nx(['run-many', '-t', 'serve', `--parallel=${projects.length}`, '--outputStyle=stream'], { cwd: root });
+  const exclude = skipped.map((x) => x.name);
+  await nx(['run-many', '-t', 'serve', `--parallel=${projects.length}`, '--outputStyle=stream', ...(exclude.length ? [`--exclude=${exclude.join(',')}`] : [])], { cwd: root });
 }

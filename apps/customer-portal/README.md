@@ -12,11 +12,13 @@ npm run dev
 
 Dev server: **http://localhost:3000**
 
-From the monorepo root (after `npm install`):
+From the workspace root (after `npm install`), together with the API and services:
 
 ```bash
-npm run customer-portal
+npx nestlaravel dev
 ```
+
+The portal is an Nx project with a `serve` target, so no separate terminal is needed. Missing from a workspace? `npx nestlaravel add portals`.
 
 ## Config
 

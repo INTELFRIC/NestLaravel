@@ -12,8 +12,10 @@ npm i -D nestlaravel                       # or per-project (create adds it for 
 | `generate event <type>` | **Schema-governed** event (recommended, 1.1+): class with an `EventSchema`, registered in `config/kafka.php` `events`. `--service <svc>` (services only), `--version N` (a new version is a new class `OrderCreatedV2`, published versions stay untouched), `--force` |
 | `generate kafka-event <type>` | Domain event class (+ `--consumer` handler). `--service <svc>` (use `api` for the gateway) |
 | `generate kafka-topic <name>` | Registers a topic in `config/kafka.php` and `.env.example`. `--service <svc>`, `--create` (creates it + `.dlq` on the dev broker) |
+| `generate app web\|mobile [name]` | Scaffolds a Next.js (`web`, ports 3002+) or Flutter (`mobile`, port 8090) client in `apps/<name>` with a `project.json` **`serve`** target, the gateway URL and the CORS origin; recorded in `nestlaravel.json` → `clients`. `--port N`, `--force`, `--skip-install` (see [FRONTEND.md](FRONTEND.md)) |
+| `add portals` | Adds the Next.js customer (:3000) and admin (:3001) portals to a workspace created without `--with-portals` (CORS + workspaces + `serve` targets). `--skip-install` |
 | `add tenancy` | Installs the multi-tenancy package ([MULTI-TENANCY.md](MULTI-TENANCY.md)). `--service a,b` |
-| `dev` | Starts Kafka/Postgres/Redis (Docker) then serves all apps via Nx. `--no-infra`, `--docker` (full containerised stack) |
+| `dev` | Starts Kafka/Postgres/Redis (Docker) then serves every app with a `serve` target via Nx: API, services, portals and web/mobile clients (a Flutter client is skipped with a hint when the SDK is missing; a Next.js client when `npm install` is pending). `--no-infra`, `--docker` (full containerised stack) |
 | `test` / `lint` | `nx run-many -t test\|lint`. `--affected`, `--project <name>`, extra Nx args after `--` |
 | `build` | Production Docker images via Nx. `--tag 1.2.3`, `--registry ghcr.io/acme` |
 | `doctor` | Verifies Node, npm, PHP (+ extensions), Composer, Git, Docker, php-rdkafka, pcntl (graceful shutdown) and, inside a workspace, each app's `.env`, `APP_KEY`, signing secret length and dependencies |
@@ -30,8 +32,9 @@ The operate commands (`production:check`, `events:*`, `kafka:health`, `outbox:st
 Aliases: `new`=`create`, `g`/`gen`=`generate`, `serve`=`dev`, `upgrade`=`update`.
 Equivalent Nx usage works everywhere: `npx nx test orders-service`, `npx nx serve api`, `npx nx graph`.
 
-> **Web and mobile apps** (Next.js, React, HTML/JS, TypeScript, Flutter, …) have no generator: create them with the
-> framework's own tool and connect them to the gateway — step-by-step in [FRONTEND.md](FRONTEND.md).
+> **Web and mobile apps:** `generate app web|mobile` (Next.js / Flutter) and `add portals` scaffold and wire them.
+> Other stacks (React/Vite, Vue, HTML/JS, Electron, …): create them with the framework's own tool and connect them
+> to the gateway — step-by-step in [FRONTEND.md](FRONTEND.md).
 
 ## Examples
 

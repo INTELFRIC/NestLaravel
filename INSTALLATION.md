@@ -37,6 +37,9 @@ writes it to `POSTGRES_PORT` (root `.env`) and `DB_PORT` (`apps/api/.env`). With
 Options: `--db sqlite|pgsql|mysql`, `--with-portals`, `--migrate`, `--skip-install`, `--skip-git`, `--skip-validate`,
 `--skip-checks`, `-y`.
 
+Created without `--with-portals`? Add them later with `npx nestlaravel add portals`; add a web or mobile client with
+`npx nestlaravel generate app web|mobile [name]`. `nestlaravel dev` starts them alongside the API.
+
 Nothing is committed: `.env` files are git-ignored and never included in the npm package.
 
 ## 3. First service and dev loop

@@ -364,12 +364,14 @@ KAFKA_SECURITY_PROTOCOL=plaintext</code></pre></div></div>
         <tr><td><code>npx nestlaravel production:check</code></td><td>PASS / WARN / FAIL audit of the effective configuration (exit 1 on FAIL)</td></tr>
         <tr><td><code>npx nestlaravel outbox:status</code> / <code>dlq:list</code> / <code>kafka:health</code></td><td>Outbox backlog and failed rows, dead letters, broker reachability</td></tr>
         <tr><td><code>npx nestlaravel events:list</code> / <code>events:check</code> / <code>tenant:check</code></td><td>Registered events, schema compatibility gate, tenant-isolation audit</td></tr>
-        <tr><td><code>npx nestlaravel dev</code></td><td>Start infrastructure and serve all apps</td></tr>
+        <tr><td><code>npx nestlaravel dev</code></td><td>Start infrastructure and serve every app with a <code>serve</code> target: API, services, portals and web/mobile clients</td></tr>
         <tr><td><code>npx nestlaravel test</code> / <code>lint</code></td><td>Run every app's tests / style checks via Nx</td></tr>
         <tr><td><code>npx nestlaravel build</code></td><td>Build production Docker images</td></tr>
         <tr><td><code>npx nestlaravel update</code></td><td>Safe, backed-up upgrade (<code>--dry-run</code> first)</td></tr>
         <tr><td><code>npx nestlaravel add tenancy</code></td><td>Install the optional multi-tenancy package</td></tr>
-        <tr><td><em>Web / desktop / mobile apps</em></td><td>Created with the stack's own tool, then connected to the gateway &mdash; <a href="/docs/frontend.html">step-by-step guide</a> (no generator needed)</td></tr>
+        <tr><td><code>npx nestlaravel generate app web|mobile [name]</code></td><td>Next.js or Flutter client with an Nx <code>serve</code> target, gateway URL and CORS origin</td></tr>
+        <tr><td><code>npx nestlaravel add portals</code></td><td>Add the Next.js customer (:3000) and admin (:3001) portals to an existing workspace</td></tr>
+        <tr><td><em>Other stacks (Vue, Electron, Tauri, &hellip;)</em></td><td>Created with the stack's own tool, then connected to the gateway &mdash; <a href="/docs/frontend.html">step-by-step guide</a></td></tr>
         <tr><td><code>npx nestlaravel doctor</code></td><td>Check Node, PHP, Composer, Docker and your workspace's apps</td></tr>
       </tbody>
     </table></div>
@@ -387,7 +389,7 @@ KAFKA_SECURITY_PROTOCOL=plaintext</code></pre></div></div>
       <div class="card"><h3>Authentication</h3><p>Sanctum tokens and role-based access on the gateway.</p><p style="margin-top:10px"><a href="/docs/authentication.html">Open documentation</a></p></div>
       <div class="card"><h3>Docker deployment</h3><p>Compose stack and per-service images.</p><p style="margin-top:10px"><a href="/docs/docker.html">Open documentation</a></p></div>
       <div class="card"><h3>Production deployment</h3><p>Docker, Linux/VPS, optional Kubernetes and CI/CD.</p><p style="margin-top:10px"><a href="/docs/deployment.html">Open documentation</a></p></div>
-      <div class="card"><h3>Web &amp; mobile apps</h3><p>Next.js, React, HTML/JS, TypeScript or Flutter — step-by-step instructions, no generator needed.</p><p style="margin-top:10px"><a href="/docs/frontend.html">Open documentation</a></p></div>
+      <div class="card"><h3>Web &amp; mobile apps</h3><p>Generate Next.js or Flutter clients from the CLI, or follow the steps for React, HTML/JS and more.</p><p style="margin-top:10px"><a href="/docs/frontend.html">Open documentation</a></p></div>
       <div class="card"><h3>Multi-tenancy</h3><p>Tenant-scoped data, jobs, cache and events.</p><p style="margin-top:10px"><a href="/docs/multi-tenancy.html">Open documentation</a></p></div>
     </div>
   </div>
@@ -397,20 +399,48 @@ KAFKA_SECURITY_PROTOCOL=plaintext</code></pre></div></div>
 <section id="clients" aria-labelledby="h-clients">
   <div class="wrap">
     <h2 class="title" id="h-clients">Web, desktop and mobile clients</h2>
-    <p class="sub">Use any front-end technology. Every client talks to the gateway only; you create the app with its own tool and connect it in five steps. <a href="/docs/frontend.html">Read the guide</a>.</p>
+    <p class="sub">Add clients with one command. Every client talks to the gateway only, and <code>npx nestlaravel dev</code> starts them together with the API &mdash; no extra terminals. <a href="/docs/frontend.html">Read the guide</a>.</p>
     <div class="grid">
-      <div class="card reveal"><h3>Web-based</h3><p>Next.js, React (Vite), Vue, Angular, plain HTML/JS, TypeScript.</p>
-        <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx create-next-app@latest web --ts --app
-npm create vite@latest web -- --template react-ts</code></pre></div>
+      <div class="card reveal"><h3>1. Generate it</h3>
+        <p>Each command writes the app under <code>apps/&lt;name&gt;</code> with an Nx <code>serve</code> target, the gateway URL, and its origin on the gateway&rsquo;s CORS list. It is recorded in <code>nestlaravel.json</code>.</p>
+        <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel add portals
+npx nestlaravel generate app web storefront
+npx nestlaravel generate app mobile</code></pre></div></div>
+      <div class="card reveal"><h3>2. Run everything</h3>
+        <p><code>dev</code> serves every app that has a <code>serve</code> target: the API, services, portals and your clients. A Flutter client is skipped with a hint when the SDK is missing, and a Next.js client when <code>npm install</code> is pending &mdash; the rest still start.</p>
+        <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npx nestlaravel dev</code></pre></div></div>
+      <div class="card reveal"><h3>What you get</h3>
+        <p><strong>portals</strong>: Next.js customer (:3000) and admin (:3001), for workspaces created without <code>--with-portals</code>.<br>
+        <strong>web</strong>: Next.js app on the next free port from 3002.<br>
+        <strong>mobile</strong>: Flutter app served as web on :8090; <code>npx nx run mobile:device</code> targets a phone or emulator (Android reaches the gateway at <code>10.0.2.2</code>).</p></div>
+    </div>
+    <p class="sub" style="margin-top:24px">Prefer another stack? Any client works if it talks to the gateway.</p>
+    <div class="grid">
+      <div class="card reveal"><h3>Web-based</h3><p>React (Vite), Vue, Angular, plain HTML/JS, TypeScript.</p>
+        <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npm create vite@latest web -- --template react-ts</code></pre></div>
         <p><a href="/docs/frontend.html#web-based-clients">Add a web app &rarr;</a></p></div>
       <div class="card reveal"><h3>Desktop-based</h3><p>Tauri, Electron (web UI in a native shell) or Flutter desktop for Windows, macOS and Linux.</p>
         <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>npm create tauri-app@latest desktop
 flutter create desktop --platforms windows,macos,linux</code></pre></div>
         <p><a href="/docs/frontend.html#desktop-based-clients">Add a desktop app &rarr;</a></p></div>
-      <div class="card reveal"><h3>Mobile-based</h3><p>Flutter, React Native, Swift or Kotlin for Android and iOS. No CORS; token in the platform keystore.</p>
-        <div class="code"><button class="copy" type="button" aria-label="Copy">Copy</button><pre><code>flutter create mobile --platforms android,ios
-flutter run --dart-define=API_URL=http://10.0.2.2:8000/api</code></pre></div>
+      <div class="card reveal"><h3>Other mobile stacks</h3><p>React Native, Swift or Kotlin for Android and iOS. No CORS; token in the platform keystore.</p>
         <p><a href="/docs/frontend.html#mobile-based-clients">Add a mobile app &rarr;</a></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= WHAT'S NEW ================= -->
+<section class="alt" id="whats-new" aria-labelledby="h-new">
+  <div class="wrap">
+    <h2 class="title" id="h-new">What&rsquo;s new</h2>
+    <p class="sub">Recent releases, in plain terms. Full details: <a href="/docs/changelog.html">changelog</a> and <a href="/docs/upgrading.html">upgrading guide</a>.</p>
+    <div class="grid">
+      <div class="card reveal"><h3>Clients from the CLI</h3><p><code>add portals</code> and <code>generate app web|mobile</code> scaffold Next.js and Flutter clients with the gateway URL and CORS already set, and <code>dev</code> starts them with the API. Before, you hand-created the app and ran each portal in its own terminal.</p></div>
+      <div class="card reveal"><h3>Postgres that just works <small>1.2.0</small></h3><p><code>create --db pgsql --migrate</code> starts the project&rsquo;s own Postgres container, picks the next free port if 5432 is taken, and stops early if a leftover Docker volume would reject the new password.</p></div>
+      <div class="card reveal"><h3>API docs page fixed <small>1.2.1</small></h3><p>The gateway&rsquo;s <code>/docs/api</code> page rendered blank because the strict security policy blocked its script bundle. Only that route is relaxed; every other response keeps the strict policy.</p></div>
+      <div class="card reveal"><h3>Install checks <small>1.1.1</small></h3><p><code>create</code> verifies the PHP database driver and database reachability up front and tells you what to fix, instead of failing mid-install.</p></div>
+      <div class="card reveal"><h3>Production hardening <small>1.1.0</small></h3><p>Transactional inbox, a concurrency-safe outbox, schema-governed events, sagas, health probes, metrics and tracing &mdash; all opt-in. Check a workspace with <code>production:check</code>.</p><p style="margin-top:10px"><a href="/docs/reliability.html">What is proven</a></p></div>
+      <div class="card reveal"><h3>Operate commands <small>1.1.0</small></h3><p><code>outbox:status</code>, <code>dlq:list</code>, <code>kafka:health</code>, <code>events:check</code> and <code>tenant:check</code> inspect a running system from the CLI.</p></div>
     </div>
   </div>
 </section>

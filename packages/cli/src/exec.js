@@ -7,7 +7,7 @@ const isWin = process.platform === 'win32';
 
 /** npm/npx/nx/composer are .cmd/.bat shims on Windows and must go through cmd.exe. */
 function needsShell(command) {
-  return isWin && /^(npm|npx|nx|pnpm|yarn|composer)$/i.test(command);
+  return isWin && /^(npm|npx|nx|pnpm|yarn|composer|flutter|dart)$/i.test(command);
 }
 
 /** Quote one argument for cmd.exe. Refuses characters cmd.exe would expand or split on. */

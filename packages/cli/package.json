@@ -1,6 +1,6 @@
 {
   "name": "nestlaravel",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "NestLaravel — the Nx + Laravel microservice framework with Kafka. Create, generate, develop, build and upgrade projects.",
   "keywords": [
     "nestlaravel",
@@ -32,7 +32,7 @@
   "scripts": {
     "build:templates": "node scripts/build-templates.mjs",
     "prepack": "node scripts/build-templates.mjs",
-    "test": "node --test test/unit.test.js test/ops.test.js",
+    "test": "node --test test/unit.test.js test/ops.test.js test/clients.test.js",
     "verify:package": "node scripts/verify-package.mjs"
   },
   "publishConfig": {

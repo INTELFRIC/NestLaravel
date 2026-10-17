@@ -95,13 +95,8 @@ $env:RUN_MIGRATIONS=1; docker compose up -d --build
 | http://localhost:9000 | MinIO S3 API |
 | http://localhost:8025 | Mailpit UI |
 
-Portals still run on the host (Node):
-
-```bash
-npm install
-npm run customer-portal   # :3000
-npm run admin-portal      # :3001
-```
+Portals still run on the host (Node). With the compose stack up, run `npm install` and then
+`npx nestlaravel dev --no-infra` to serve them on :3000 and :3001.
 
 Point portals at `NEXT_PUBLIC_API_URL=http://localhost:8000/api`.
 

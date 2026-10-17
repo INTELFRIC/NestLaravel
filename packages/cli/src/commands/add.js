@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from '../args.js';
 import { run } from '../exec.js';
+import { addPortals } from '../generators/app.js';
 import { copyTree, templatesDir } from '../fsx.js';
 import { c, CliError, log } from '../ui.js';
 import { readManifest, requireWorkspace, validateName, writeManifest } from '../workspace.js';
@@ -10,6 +11,8 @@ export const ADD_HELP = `
 Usage: nestlaravel add <feature> [options]
 
 Features:
+  portals    The Next.js customer (:3000) and admin (:3001) portals, with CORS and an Nx "serve" target;
+             "nestlaravel dev" then starts them with the API. (--skip-install skips npm install)
   tenancy    Optional multi-tenancy package (nestlaravel/tenancy): single-database tenant isolation for
              Eloquent, queued jobs, cache keys, storage paths and Kafka events.
 
@@ -22,9 +25,10 @@ export async function add(argv) {
   const { positionals, flags } = parseArgs(argv, { boolean: ['skip-install', 'help'], alias: { h: 'help' } });
   const feature = positionals[0];
   if (flags.help || !feature) return void console.log(ADD_HELP);
-  if (feature !== 'tenancy') throw new CliError(`Unknown feature "${feature}". Available: tenancy`);
+  if (feature !== 'tenancy' && feature !== 'portals') throw new CliError(`Unknown feature "${feature}". Available: portals, tenancy`);
 
   const root = requireWorkspace();
+  if (feature === 'portals') return addPortals(root, flags);
   const manifest = readManifest(root);
 
   const requested = flags.service
