@@ -131,3 +131,9 @@ test('managed sync: replaces untouched files, never overwrites edited ones', () 
   assert.equal(readFileSync(join(root, 'infrastructure/docker/b.conf.nestlaravel-new'), 'utf8'), 'v2');
   assert.equal(sha(Buffer.from('x')).length, 64);
 });
+
+test('root .env.example uses Compose-only DB keys (Laravel DB_* would leak into Nx tasks and break sqlite)', () => {
+  const env = readFileSync(new URL('../../../.env.example', import.meta.url), 'utf8');
+  assert.doesNotMatch(env, /^DB_(DATABASE|USERNAME|PASSWORD)=/m);
+  assert.match(env, /^POSTGRES_PASSWORD=/m);
+});

@@ -146,7 +146,7 @@ export async function create(argv) {
 
   // Root compose env
   let rootEnv = readFileSync(join(root, '.env.example'), 'utf8');
-  rootEnv = setEnv(rootEnv, 'DB_PASSWORD', dbPassword);
+  rootEnv = setEnv(rootEnv, 'POSTGRES_PASSWORD', dbPassword);
   rootEnv = setEnv(rootEnv, 'REDIS_PASSWORD', redisPassword);
   rootEnv = setEnv(rootEnv, 'COMPOSE_PROJECT_NAME', name);
   if (db === 'pgsql') rootEnv = setEnv(rootEnv, 'POSTGRES_PORT', String(dbPort));

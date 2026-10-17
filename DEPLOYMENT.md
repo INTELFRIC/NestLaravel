@@ -20,7 +20,7 @@ the command differs. Services deploy, scale and roll back **independently**.
 ## Docker Compose on a single host / VPS
 
 ```bash
-cp .env.example .env                 # or use the one `create` generated; set DB_PASSWORD, REDIS_PASSWORD, *_SERVICE_SECRET
+cp .env.example .env                 # or use the one `create` generated; set POSTGRES_PASSWORD, REDIS_PASSWORD, *_SERVICE_SECRET
 docker compose up -d --build
 docker compose exec app php artisan migrate --force
 docker compose exec app php artisan db:seed --class='Database\Seeders\RolePermissionSeeder' --force
